@@ -5,7 +5,7 @@ use Elementor\Utils;
 use Elementor\Controls_Manager;
 use Elementor\Repeater;
 use Elementor\Group_Control_Typography;
-use Elementor\Scheme_Typography;
+Use Elementor\Core\Schemes\Typography;
 use Elementor\Group_Control_Border;
 
 if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
@@ -40,6 +40,7 @@ class wkfe_portfolio extends Widget_Base {
 	public function get_style_depends() {
         return [
             'widgetkit_bs',
+            'fontawesome',
             'widgetkit_main',
         ];
     }
@@ -181,7 +182,7 @@ class wkfe_portfolio extends Widget_Base {
 
 
 		          ],
-		          'fields'      => array_values( $repeater->get_controls() ),
+		          'fields'      => $repeater->get_controls(),
 		          'title_field' => '{{{portfolio_title}}}',
 		      ]
 		  );
@@ -271,6 +272,21 @@ class wkfe_portfolio extends Widget_Base {
 					],
 				]
 		);
+		$this->add_control(
+			'hover_4_action',
+				[
+					'label'     => esc_html__( 'On Click Action', 'widgetkit-for-elementor' ),
+					'type'      => Controls_Manager::SELECT,
+					'default'   => 'image_popup',
+					'options'   => [
+						'image_popup'     => esc_html__( 'Image Popup', 'widgetkit-for-elementor' ),
+						'demo_link'     => esc_html__( 'Demo Link', 'widgetkit-for-elementor' ),
+					],
+					'condition' => [
+						'portfolio_hover_effect' => 'hover_4'
+					]
+				]
+		);
 
 		$this->end_controls_section();
 
@@ -334,7 +350,7 @@ class wkfe_portfolio extends Widget_Base {
 				[
 					'name'     => 'filter_typography',
 					'label'    => esc_html__( 'Typography', 'widgetkit-for-elementor' ),
-					'scheme'   => Scheme_Typography::TYPOGRAPHY_4,
+					'scheme'   => Typography::TYPOGRAPHY_4,
 					'selector' => '{{WRAPPER}} .portfolio-filter>li>a, {{WRAPPER}} .portfolio-filter.slash > li .filter-slash',
 					'condition'=> [
 		                'filter_enable' => 'yes',
@@ -619,7 +635,7 @@ class wkfe_portfolio extends Widget_Base {
 				[
 					'name'     => 'overlay_title_typography',
 					'label'    => esc_html__( 'Typography', 'widgetkit-for-elementor' ),
-					'scheme'   => Scheme_Typography::TYPOGRAPHY_4,
+					'scheme'   => Typography::TYPOGRAPHY_4,
 					'selector' => '{{WRAPPER}} .tgx-portfolio .portfolio-item .title',
 				]
 		);
@@ -674,7 +690,7 @@ class wkfe_portfolio extends Widget_Base {
 				[
 					'name'     => 'overlay_desc_typography',
 					'label'    => esc_html__( 'Typography', 'widgetkit-for-elementor' ),
-					'scheme'   => Scheme_Typography::TYPOGRAPHY_4,
+					'scheme'   => Typography::TYPOGRAPHY_4,
 					'selector' => '{{WRAPPER}} .tgx-portfolio .portfolio-item .desc',
 				]
 		);

@@ -1113,7 +1113,8 @@ class EF_Form extends EF_Form_Base {
 
 		$this->end_controls_section();
 
-		foreach ( $actions as $action ) {
+		foreach ( $actions as $key=>$action ) {
+		  if ($key != 'mailchimp' && $key != 'drip' && $key != 'activecampaign' && $key != 'getresponse' && $key != 'convertkit' && $key != 'mailerlite')
 			$action->register_settings_section( $this );
 		}
 
@@ -2673,7 +2674,7 @@ class EF_Form extends EF_Form_Base {
                           break;
                         case 'email':
                           $this->add_render_attribute( 'input' . $item_index, 'class', 'elementor-field-textual' );
-                          echo '<input size="1" ' . $this->get_render_attribute_string( 'input' . $item_index ) . ' pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,63}$">';
+                          echo '<input size="1" ' . $this->get_render_attribute_string( 'input' . $item_index ) . ' pattern="[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$" oninvalid="this.setCustomValidity(\'Email format should be name@example.com\')" oninput="this.setCustomValidity(\'\')">';
                           break;
 						default:
 							$field_type = $item['field_type'];

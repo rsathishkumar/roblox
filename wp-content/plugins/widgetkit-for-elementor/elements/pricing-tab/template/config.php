@@ -5,7 +5,7 @@ use Elementor\Controls_Manager;
 use Elementor\Repeater;
 use Elementor\Widget_Base;
 use Elementor\Group_Control_Typography;
-use Elementor\Scheme_Typography;
+Use Elementor\Core\Schemes\Typography;
 use Elementor\Utils;
 use Elementor\Group_Control_Border;
 
@@ -758,7 +758,7 @@ if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
             'pricing_tabs',
             [
                 'type'    => Controls_Manager::REPEATER,
-                'fields'  => array_values( $repeater->get_controls() ),
+                'fields'  => $repeater->get_controls(),
                 'default' => [
                     [
                         'tab_title'    => esc_html__( 'Shared Hosting', 'widgetkit-for-elementor' ),

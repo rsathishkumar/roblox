@@ -42,6 +42,9 @@
 	// Add custom mime-type
 	add_filter('upload_mimes', 'dnd_extra_mime_types', 1, 1);
 
+    // Plugin settings
+    add_filter( 'plugin_action_links_' . plugin_basename( dnd_upload_cf7_directory ) .'/drag-n-drop-upload-cf7.php', 'dnd_cf7_upload_links' );
+
 	// Add Submenu - Settings
 	add_action('admin_menu', 'dnd_admin_settings');
 
@@ -50,6 +53,13 @@
 
 	// Flamingo Hooks
 	add_action('before_delete_post', 'dnd_remove_uploaded_files');
+
+    // Add links to settings
+    function dnd_cf7_upload_links( $actions ) {
+        $upload_links = array('<a href="' . admin_url( 'admin.php?page=drag-n-drop-upload' ) . '">Settings</a>',);
+        $actions = array_merge( $upload_links, $actions );
+        return $actions;
+    }
 
 	// Load plugin text-domain
 	function dnd_cf7_upload_plugins_loaded() {
@@ -69,6 +79,13 @@
 				}
 			}
 		}
+
+        // fix spam
+        if( get_option('drag_n_drop_fix_spam') == 'yes' ) {
+            add_filter('wpcf7_spam', function(){
+                return false;
+            });
+        }
 	}
 
 	// Remove uploaded files when item is deleted permanently.
@@ -141,7 +158,7 @@
 			'invalid_type'		=>	__('Uploaded file is not allowed for file type','drag-and-drop-multiple-file-upload-contact-form-7'),
 			'max_file_limit'	=>	__('Note : Some of the files are not uploaded ( Only %count% files allowed )','drag-and-drop-multiple-file-upload-contact-form-7'),
 			'required'			=>	__('This field is required.', 'drag-and-drop-multiple-file-upload-contact-form-7' ),
-			'min_file'			=>	__('Minimum file upload at least','drag-and-drop-multiple-file-upload-contact-form-7'),
+			'min_file'			=>	__('The minimum file upload is','drag-and-drop-multiple-file-upload-contact-form-7'),
 		);
 
 		// return error message based on $error_key request
@@ -183,6 +200,11 @@
 		if ( is_admin() || 'GET' != $_SERVER['REQUEST_METHOD'] || is_robots() || is_feed() || is_trackback() ) {
 			return;
 		}
+
+        // Disable auto delete
+        if( get_option('drag_n_drop_disable_auto_delete') == 'yes' ) {
+            return;
+        }
 
 		// Setup dirctory path
 		$upload = wp_upload_dir();
@@ -482,12 +504,17 @@
 		$atts['data-name'] = $tag->name;
 		$atts['data-type'] = $tag->get_option( 'filetypes','', true);
 		$atts['data-limit'] = $tag->get_option( 'limit','', true);
+        $atts['data-min'] = $tag->get_option( 'min-file', '', true );
 		$atts['data-max'] = $tag->get_option( 'max-file','', true);
 		$atts['data-id'] = ( $form->id() ? $form->id() : 0 );
+        $atts['data-version'] = 'free version '. dnd_upload_cf7_version;
 
-
+        // Accept data attributes
         $types = explode('|', $atts['data-type'] );
-        $atts['accept'] = '.' . implode(', .', array_map( 'trim', $types ) );
+
+        if( $types && ! wp_is_mobile() ) {
+            $atts['accept'] = '.' . implode(', .', array_map( 'trim', $types ) );
+        }
 
 		// Combine and format attrbiutes
 		$atts = wpcf7_format_atts( $atts );
@@ -550,8 +577,15 @@
 	function dnd_upload_cf7_validation_filter( $result, $tag ) {
 		$name = $tag->name;
 		$id = $tag->get_id_option();
-		$multiple_files = ( ( isset( $_POST[ $name ] ) && count( $_POST[ $name ] ) > 0 ) ? $_POST[ $name ] : null );
+		$multiple_files = ( ( isset( $_POST[ $name ] ) && is_countable( $_POST[ $name ] ) && count( $_POST[ $name ] ) > 0 ) ? $_POST[ $name ] : null );
 		$min_file = $tag->get_option( 'min-file','', true);
+
+        // Check minimum upload
+		if( $multiple_files && count( $multiple_files ) < (int) $min_file ) {
+			$min_file_error = ( get_option('drag_n_drop_error_min_file') ? get_option('drag_n_drop_error_min_file') : dnd_cf7_error_msg('min_file') );
+			$result->invalidate( $tag, $min_file_error .' '. (int)$min_file );
+			return $result;
+		}
 
 		// Cf7 Conditional Field
 		if( in_array('cf7-conditional-fields/contact-form-7-conditional-fields.php', get_option('active_plugins') ) ){
@@ -575,13 +609,6 @@
 		// Check if we have files or if it's empty
 		if( is_null( $multiple_files ) && $tag->is_required() ) {
 			$result->invalidate( $tag, wpcf7_get_message( 'invalid_required' ) );
-			return $result;
-		}
-
-		// Check minimum upload
-		if( $multiple_files && count( $multiple_files ) < (int) $min_file ) {
-			$min_file_error = ( get_option('drag_n_drop_error_min_file') ? get_option('drag_n_drop_error_min_file') : dnd_cf7_error_msg('min_file') );
-			$result->invalidate( $tag, $min_file_error .' '. (int)$min_file );
 			return $result;
 		}
 
@@ -922,6 +949,17 @@
 					do_settings_sections( 'drag-n-drop-upload-file-cf7' );
 		?>
 
+                <table class="form-table" style="display:none;">
+					<tr valign="top">
+						<th scope="row"><?php _e('Translate To','drag-and-drop-multiple-file-upload-contact-form-7'); ?></th>
+						<td><?php wp_dropdown_languages( array('name' => 'drag_n_drop_lang', 'id' => 'drag_n_drop_lang') ); ?>
+                            <div style="margin-top:20px;">
+                                <strong>Translated: </strong><a href="">abc</a>
+                            </div>
+                        </td>
+					</tr>
+				</table>
+
 				<table class="form-table">
 					<tr valign="top">
 						<th scope="row"><?php _e('Send Attachment as links?','drag-and-drop-multiple-file-upload-contact-form-7'); ?></th>
@@ -942,6 +980,8 @@
 								<option value="h4" <?php selected( get_option('drag_n_drop_heading_tag'), 'h4'); ?>>H4</option>
 								<option value="h5" <?php selected( get_option('drag_n_drop_heading_tag'), 'h5'); ?>>H5</option>
 								<option value="h6" <?php selected( get_option('drag_n_drop_heading_tag'), 'h6'); ?>>H6</option>
+                                <option value="span" <?php selected( get_option('drag_n_drop_heading_tag'), 'span'); ?>>Span</option>
+                                <option value="div" <?php selected( get_option('drag_n_drop_heading_tag'), 'div'); ?>>Div</option>
 							</select>
 						</td>
 					</tr>
@@ -985,6 +1025,24 @@
 					<tr valign="top">
 						<th scope="row"><?php _e('Minimum File','drag-and-drop-multiple-file-upload-contact-form-7'); ?></th>
 						<td><input type="text" name="drag_n_drop_error_min_file" placeholder="" class="regular-text" value="<?php echo esc_attr( get_option('drag_n_drop_error_min_file') ); ?>" placeholder="" /></td>
+					</tr>
+				</table>
+
+                <h2><?php _e('Auto Delete Files','drag-and-drop-multiple-file-upload-contact-form-7'); ?></h2>
+
+				<table class="form-table">
+					<tr valign="top">
+						<th scope="row"><?php _e('Don\'t delete files','drag-and-drop-multiple-file-upload-contact-form-7'); ?></th>
+						<td><input type="checkbox" name="drag_n_drop_disable_auto_delete" value="yes" <?php checked('yes', get_option('drag_n_drop_disable_auto_delete')); ?>> Yes <br><p class="description"><em>The default will automatically delete files 1-2 hours after submissions, if you want to keep files check "Yes" above.</em></p></td>
+					</tr>
+				</table>
+
+                <h2><?php _e('Spam Filtering Issue','drag-and-drop-multiple-file-upload-contact-form-7'); ?></h2>
+
+				<table class="form-table">
+					<tr valign="top">
+						<th scope="row"><?php _e('Fix Spam','drag-and-drop-multiple-file-upload-contact-form-7'); ?></th>
+						<td><input type="checkbox" name="drag_n_drop_fix_spam" value="yes" <?php checked('yes', get_option('drag_n_drop_fix_spam')); ?>> Yes <p class="description"><em>If a “spam” answer is the response, Contact Form 7 will suspend the email and show a message saying, “There was an error trying to send your message", force to send message by checking this option..</em></p></td>
 					</tr>
 				</table>
 
@@ -1067,4 +1125,38 @@
 		register_setting( 'drag-n-drop-upload-file-cf7', 'drag_n_drop_error_max_file','sanitize_text_field' );
 		register_setting( 'drag-n-drop-upload-file-cf7', 'drag_n_drop_error_min_file','sanitize_text_field' );
 		register_setting( 'drag-n-drop-upload-file-cf7', 'drag_n_drop_disable_btn','sanitize_text_field' );
+        register_setting( 'drag-n-drop-upload-file-cf7', 'drag_n_drop_disable_auto_delete','sanitize_text_field' );
+        register_setting( 'drag-n-drop-upload-file-cf7', 'drag_n_drop_fix_spam','sanitize_text_field' );
 	}
+
+    function dnd_upload_cf7_lang() {
+        $lang = null;
+
+        // Polylang & WPML compatiblity
+        if( function_exists('pll_current_language') ) {
+            $lang = pll_current_language();
+        }elseif( class_exists('SitePress') ) {
+            $lang = ICL_LANGUAGE_CODE;
+        }
+
+        // If english / default lang leave empty.
+        if( $lang ) {
+            $lang = ( $lang == 'en' ? '' : '-'.$lang );
+        }
+
+        return apply_filters('dndmfu_wc_lang', $lang );
+    }
+
+    /*add_action('admin_footer', function(){
+        if( isset( $_GET['page'] ) && $_GET['page'] == 'drag-n-drop-upload' ) {
+        ?>
+            <script type="text/javascript">
+                jQuery('document').ready(function($){
+                    $('#drag_n_drop_lang').change(function(){
+                        window.location.href = "<?php echo admin_url('admin.php?page=drag-n-drop-upload&lang-code='); ?>" + $(this).val();
+                    });
+                });
+            </script>
+        <?php
+        }
+    });*/

@@ -899,7 +899,7 @@ class Custom_job_list_widget extends \Elementor\Widget_Base {
             $results = $result->results;
             if($results){
                 foreach($results as $value){
-                    $title = $value->atsData->title;
+                    $title = $value->atsData->postingTitle;
                     if (!$title) continue;
                     $description = $value->atsData->description;
                     $positionId = $value->positionId;

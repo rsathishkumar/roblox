@@ -5,7 +5,7 @@ use Elementor\Controls_Manager;
 use Elementor\Repeater;
 use Elementor\Widget_Base;
 use Elementor\Group_Control_Typography;
-use Elementor\Scheme_Typography;
+Use Elementor\Core\Schemes\Typography;
 use Elementor\Utils;
 use Elementor\Group_Control_Border;
 
@@ -235,7 +235,7 @@ class wkfe_pricing_2 extends Widget_Base {
             'features_list_2',
             [
                 'type'    => Controls_Manager::REPEATER,
-                'fields'  => array_values( $repeater->get_controls() ),
+                'fields'  => $repeater->get_controls(),
                 'default' => [
                     [
                         'item_text_2' => __( '<b>1</b> Website', 'widgetkit-for-elementor' ),

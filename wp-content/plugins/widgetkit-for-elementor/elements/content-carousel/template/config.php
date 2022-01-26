@@ -5,9 +5,11 @@ use Elementor\Widget_Base;
 use Elementor\Utils;
 use Elementor\Controls_Manager;
 use Elementor\Group_Control_Typography;
-use Elementor\Scheme_Typography;
+Use Elementor\Core\Schemes\Typography;
 use Elementor\Group_Control_Border;
 use Elementor\Group_Control_Box_Shadow;
+use Elementor\Group_Control_Image_Size;
+
 
 if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
 
@@ -70,7 +72,93 @@ class wkfe_content_carousel extends Widget_Base {
         foreach( $terms as $t ):
             $cat_names[$t->term_id] = $t->name;
 		endforeach;
-		
+	
+
+#	region layout config
+		$this->start_controls_section(
+			'section_layout',
+			[
+				'label' => esc_html__( 'Layout', 'widgetkit-for-elementor' ),
+			]
+		);
+
+			$this->add_control(
+				'center_mode_enable',
+					[
+						'label'     => esc_html__( 'Center Mode', 'widgetkit-for-elementor' ),
+						'description' => 'You must have at least 4 items',
+						'type'      => Controls_Manager::SWITCHER,
+						'default'   => 'no',
+						'yes'    => esc_html__( 'Yes', 'widgetkit-for-elementor' ),
+						'no'     => esc_html__( 'No', 'widgetkit-for-elementor' ),
+					]
+			);
+
+			$this->add_responsive_control(
+				'item_column',
+				[
+					'label'   => __( 'Number of Colum', 'widgetkit-for-elementor' ),
+					'type'    => Controls_Manager::NUMBER,
+					'default' => 3,
+					'min'     => 1,
+					'max'     => 6,
+					'step'    => 1,
+					'condition' => [
+						'center_mode_enable!' => 'yes',
+					],
+				]
+			);
+
+
+			$this->add_control(
+				'column_gap',
+					[
+						'label'       => __( 'Colum Gap', 'widgetkit-for-elementor' ),
+						'type' => Controls_Manager::SELECT,
+						'default' => 'medium',
+						'options' => [
+							'collapse'=> __( 'None', 'widgetkit-for-elementor' ),
+							'small'   => __( 'Small', 'widgetkit-for-elementor' ),
+							'medium'  => __( 'Medium', 'widgetkit-for-elementor' ),
+							'large'   => __( 'Large', 'widgetkit-for-elementor' ),
+						],
+					]
+			);
+
+			$this->add_control(
+			'thumbnail_position',
+				[
+					'label' => __( 'Image Position', 'widgetkit-for-elementor' ),
+					'type' => Controls_Manager::CHOOSE,
+					'default' => 'top',
+					'options' => [
+						'top' => [
+							'title' => __( 'Top', 'widgetkit-for-elementor' ),
+							'icon' => 'eicon-v-align-top',
+						],
+						'bottom' => [
+							'title' => __( 'Bottom', 'widgetkit-for-elementor' ),
+							'icon' => 'eicon-v-align-bottom',
+						],
+					],
+					'toggle' => false,
+					'separator' => 'before',
+				]
+			);
+			$this->add_group_control(
+                Group_Control_Image_Size::get_type(),
+                [
+                    'label' => esc_html__('Image size', 'widgetkit-for-elementor'),
+                    'name' => 'cc_image',
+                    'default' => 'large',
+                    'separator' => 'none',
+                ]
+            );
+
+		$this->end_controls_section();
+#	end region layout config
+
+
 #	region content config
 	$this->start_controls_section(
 		'section_content',
@@ -153,6 +241,7 @@ class wkfe_content_carousel extends Widget_Base {
               [
                   'label'       => esc_html__( 'Custom Contents', 'widgetkit-for-elementor' ),
                   'type'        => Controls_Manager::REPEATER,
+                  'fields'      => $repeater->get_controls(),
                   'show_label'  => true,
                    'separator'  => 'before',
                   'default'     => [
@@ -189,7 +278,6 @@ class wkfe_content_carousel extends Widget_Base {
      
                         ],
                   ],
-                  'fields'      => array_values( $repeater->get_controls() ),
                   'title_field' => '{{{content_title}}}',
                   'condition'   => [
                         'item_option' => 'custom_post',
@@ -409,81 +497,6 @@ class wkfe_content_carousel extends Widget_Base {
 
         $this->end_controls_section();
 #	end region content config
-
-#	region layout config
-	    $this->start_controls_section(
-            'section_layout',
-            [
-                'label' => esc_html__( 'Layout', 'widgetkit-for-elementor' ),
-            ]
-        );
-
-            $this->add_control(
-                'center_mode_enable',
-                    [
-                        'label'     => esc_html__( 'Center Mode', 'widgetkit-for-elementor' ),
-                        'description' => 'You must have at least 4 items',
-                        'type'      => Controls_Manager::SWITCHER,
-                        'default'   => 'no',
-                        'yes'    => esc_html__( 'Yes', 'widgetkit-for-elementor' ),
-                        'no'     => esc_html__( 'No', 'widgetkit-for-elementor' ),
-                    ]
-            );
-
-            $this->add_responsive_control(
-                'item_column',
-                [
-                    'label'   => __( 'Number of Colum', 'widgetkit-for-elementor' ),
-                    'type'    => Controls_Manager::NUMBER,
-                    'default' => 3,
-                    'min'     => 1,
-                    'max'     => 6,
-                    'step'    => 1,
-                    'condition' => [
-                        'center_mode_enable!' => 'yes',
-                    ],
-                ]
-			);
-
-
-			$this->add_control(
-	            'column_gap',
-	                [
-	                    'label'       => __( 'Colum Gap', 'widgetkit-for-elementor' ),
-	                    'type' => Controls_Manager::SELECT,
-	                    'default' => 'medium',
-	                    'options' => [
-	                        'collapse'=> __( 'None', 'widgetkit-for-elementor' ),
-	                        'small'   => __( 'Small', 'widgetkit-for-elementor' ),
-	                        'medium'  => __( 'Medium', 'widgetkit-for-elementor' ),
-	                        'large'   => __( 'Large', 'widgetkit-for-elementor' ),
-	                    ],
-	                ]
-	        );
-
-            $this->add_control(
-			'thumbnail_position',
-				[
-					'label' => __( 'Image Position', 'widgetkit-for-elementor' ),
-					'type' => Controls_Manager::CHOOSE,
-					'default' => 'top',
-					'options' => [
-						'top' => [
-							'title' => __( 'Top', 'widgetkit-for-elementor' ),
-							'icon' => 'eicon-v-align-top',
-						],
-						'bottom' => [
-							'title' => __( 'Bottom', 'widgetkit-for-elementor' ),
-							'icon' => 'eicon-v-align-bottom',
-						],
-					],
-					'toggle' => false,
-					'separator' => 'before',
-				]
-			);
-
-		$this->end_controls_section();
-#	end region layout config
 
 #	region controls config
 		$this->start_controls_section(
@@ -726,7 +739,7 @@ class wkfe_content_carousel extends Widget_Base {
 	                [
 	                    'name'     => 'meta_typography',
 	                    'label'    => esc_html__( 'Typography', 'widgetkit-for-elementor' ),
-	                    'scheme'   => Scheme_Typography::TYPOGRAPHY_4,
+	                    'scheme'   => Typography::TYPOGRAPHY_4,
 	                    'selector' => '{{WRAPPER}} .content-carousel .wk-card .wk-card-body span',
 	                ]
 	        );
@@ -791,7 +804,7 @@ class wkfe_content_carousel extends Widget_Base {
                     [
                         'name'     => 'title_typography',
                         'label'    => esc_html__( 'Typography', 'widgetkit-for-elementor' ),
-                        'scheme'   => Scheme_Typography::TYPOGRAPHY_4,
+                        'scheme'   => Typography::TYPOGRAPHY_4,
                         'selector' => '{{WRAPPER}} .content-carousel .wk-card .wk-card-body .wk-card-title',
                     ]
             );
@@ -854,7 +867,7 @@ class wkfe_content_carousel extends Widget_Base {
 	                    [
 	                        'name'     => 'content_typography',
 	                        'label'    => esc_html__( 'Typography', 'widgetkit-for-elementor' ),
-	                        'scheme'   => Scheme_Typography::TYPOGRAPHY_4,
+	                        'scheme'   => Typography::TYPOGRAPHY_4,
 	                        'selector' => '{{WRAPPER}} .content-carousel .wk-card .wk-card-body p',
 	                    ]
 	            );
@@ -1281,6 +1294,9 @@ class wkfe_content_carousel extends Widget_Base {
 	protected function render() {
 		require WK_PATH . '/elements/content-carousel/template/view.php';
 	}
+	protected function _content_template()
+    {
+    }
 
 
 }

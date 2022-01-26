@@ -483,6 +483,54 @@ input:checked + .rectangle:before {
       color: #9c27b0;
       margin-right: 3px; }
 
+.wk-dashboard-wrapper .wk-main .wk-pro-license .wk-license-card ol {
+  margin: 0;
+  margin-left: 15px;
+  padding: 0; }
+
+.wk-dashboard-wrapper .wk-main .wk-pro-license .wk-license-card .license-checker-wrapper {
+  margin: 30px 0px;
+  display: flex; }
+  .wk-dashboard-wrapper .wk-main .wk-pro-license .wk-license-card .license-checker-wrapper input#license-input {
+    width: 350px;
+    height: 40px;
+    border-radius: 4px 0px 0px 4px;
+    margin: 0; }
+  .wk-dashboard-wrapper .wk-main .wk-pro-license .wk-license-card .license-checker-wrapper button {
+    height: 40px;
+    border-radius: 0px 4px 4px 0px; }
+
+.wk-dashboard-action-button div.wk-dashboard-action-button-wrapper {
+  position: relative;
+  display: inline-block; }
+  .wk-dashboard-action-button div.wk-dashboard-action-button-wrapper .loading-ring {
+    display: inline-block;
+    position: absolute;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    left: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #f0506e;
+    visibility: hidden; }
+  .wk-dashboard-action-button div.wk-dashboard-action-button-wrapper .loading-ring:after {
+    content: " ";
+    display: block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 3px solid #fff;
+    border-color: #fff transparent #fff transparent;
+    animation: loading-ring 0.7s linear infinite; }
+
+@keyframes loading-ring {
+  0% {
+    transform: rotate(0deg); }
+  100% {
+    transform: rotate(360deg); } }
+
 .widgetkit-templates-wrapper img {
   max-width: 100%; }
 
@@ -593,3 +641,10 @@ input:checked + .rectangle:before {
   100% {
     -webkit-transform: rotate(360deg);
     transform: rotate(360deg); } }
+
+.wk-api-keys .mailchimp-api-key-wrapper {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-gap: 15px; }
+  .wk-api-keys .mailchimp-api-key-wrapper .action-button-wrapper button {
+    border-radius: 4px; }

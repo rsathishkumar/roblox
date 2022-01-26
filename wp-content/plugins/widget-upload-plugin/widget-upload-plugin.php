@@ -132,11 +132,6 @@ function drw_timelinr_dequeue () {
   wp_deregister_script( 'elementor-editor-modules' );
   wp_enqueue_script('elementor-editor-modules', CUSTOM_WIDGET_URL.'js/editor-modules.min.js', array('elementor-common-modules'), '1.9.7', true);
 
-  // Dequeue and deregister elementor-pro-frontend-js
-  wp_dequeue_script( 'elementor-pro-frontend' );
-  wp_deregister_script( 'elementor-pro-frontend' );
-  wp_enqueue_script('elementor-pro-frontend', CUSTOM_WIDGET_URL.'js/frontend.min.js', array('elementor-frontend-modules', 'elementor-sticky'), '3.0.4', true);
-
   // Dequeue and deregister elementor-editor
   wp_deregister_script( 'elementor-editor' );
   wp_dequeue_script( 'elementor-editor' );
@@ -435,10 +430,35 @@ add_action( 'elementor_pro/forms/validation/text', function ( $field, $record, $
         $ajax_handler->add_error( $field['id'], 'Cannot include special characters in company name.' );
       }
     }
+    else if ($field['id'] == 'fein_number') {
+      $field_details = $record->get_field([
+        'id' => 'field_identification_type'
+      ]);
+      if (!empty($field['value']) && strlen($field['value']) != 9) {
+        $ajax_handler->add_error( $field['id'], 'FEIN number should be 9 characters long.' );
+      }
+      else if (empty($field['value']) && $field_details['field_identification_type']['value'] == 'fein_number') {
+        $ajax_handler->add_error( $field['id'], 'FEIN number should not be empty.' );
+      }
+    }
+    else if ($field['id'] == 'sein_number') {
+      $field_details = $record->get_field([
+        'id' => 'field_identification_type'
+      ]);
+      if (!empty($field['value']) && strlen($field['value']) != 7) {
+        $ajax_handler->add_error( $field['id'], 'SEIN number should be 7 characters long.' );
+      }
+      else if (empty($field['value']) && $field_details['field_identification_type']['value'] == 'sein_number') {
+        $ajax_handler->add_error( $field['id'], 'SEIN number should not be empty.' );
+      }
+    }
 }, 10, 3 );
 
+/**
+ * Cors header function
+ */
 function add_cors_http_header(){
-    header("Access-Control-Allow-Origin: *");
-    header("Access-Control-Allow-Headers: *");
+  header("Access-Control-Allow-Origin: *");
+  header("Access-Control-Allow-Headers: *");
 }
 add_action('init','add_cors_http_header');

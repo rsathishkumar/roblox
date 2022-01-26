@@ -5,7 +5,7 @@ use Elementor\Widget_Base;
 use Elementor\Repeater;
 use Elementor\Controls_Manager;
 use Elementor\Group_Control_Typography;
-use Elementor\Scheme_Typography;
+Use Elementor\Core\Schemes\Typography;
 
 if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
 
@@ -91,6 +91,9 @@ class wkfe_contact extends Widget_Base {
 					'label' => esc_html__( 'Header', 'widgetkit-pro' ),
 					'type'  => Controls_Manager::TEXT,
 					'default' => esc_html__( 'Contact Us', 'widgetkit-pro' ),
+					'dynamic' => [
+						'active' => true,
+					]
 				]
 		);
 		$this->add_control(
@@ -99,6 +102,9 @@ class wkfe_contact extends Widget_Base {
 					'label' => esc_html__( 'Title', 'widgetkit-pro' ),
 					'type'  => Controls_Manager::TEXT,
 					'default' => esc_html__( '880.132.165.4987', 'widgetkit-pro' ),
+					'dynamic' => [
+						'active' => true,
+					]
 				]
 		);
 		$this->add_control(

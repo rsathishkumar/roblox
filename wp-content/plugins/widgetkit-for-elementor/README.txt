@@ -4,9 +4,9 @@ Contributors: Themesgrove, parvezvai, themexpert
 Donate link: https://themesgrove.com/
 Tags: elementor, add-ons, elementor addons, elementor widgets, woocommerce, learndash, learnpress, widgets, woocommerce addons, learndash addons, sensei, sensei addons, countdown, timer, slider, team, testimonial, social-share, carousel, portfolio, pricing, widgetkit
 Requires at least: 5.0
-Tested up to: 5.5
-Stable tag: 2.3.6
-Requires PHP: 5.6
+Tested up to: 5.7.1
+Stable tag: 2.3.15
+Requires PHP: 7.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -273,6 +273,64 @@ PHP 5.4 or greater.
 
 
 == Changelog ==
+
+= 2.3.15 =
+Fix - Conflict of LearnDash.
+
+= 2.3.14 =
+Fix - Tutor LMS key and panel added.
+
+= 2.3.13 =
+Fix - Namespace issue in testimonial element.
+
+= 2.3.12 =
+Fix - Live editing issue.
+Fix - Content Carousel responsive issue.
+
+= 2.3.11 =
+Fix - Elementor\Scheme_Typography Deprecation error fixed.
+Fix - Elementor\Scheme_Color Deprecation error fixed.
+
+= 2.3.10 =
+Fix - Elementor compatible tag added for Content Carousel element.
+Fix - Elementor compatible tag added for Slider Animation element.
+Fix - Elementor compatible tag added for Slider Content element.
+Fix - Elementor compatible tag added for Slider Box element.
+Fix - Elementor compatible tag added for Team element.
+Fix - Elementor compatible tag added for Testimonial element.
+Update - Slider Content Style issue.
+
+= 2.3.9 =
+New - Mailchimp element.
+Update - Testimonial element.
+
+= 2.3.8 =
+Update - Image size option added in Content Carousel Element.
+Update - Image size option added in Testimonial Element.
+Update - Image size option added in Team Element.
+
+= 2.3.7.4 =
+Fix - Body padding issue for wk contact form element.
+Fix - Thank you notice always visibility in dashboard.
+Fix - Update Testimonial layout 4 image alignment issue.
+Fix - Filterable porfolio padding issue.
+Fix - Title spacing issue fixed for Testimonial element.
+Fix - Placeholder image added for Testimonial element.
+Fix - Quote color updated for Testimonial element.
+
+= 2.3.7.3 =
+Fix - widgetkit template library page style issue in dashboard.
+
+= 2.3.7.2 =
+Fix - Fix slug conflict with wishlist member plugin.
+
+= 2.3.7.1 =
+Update - Nonce verification added for security measurements.
+Update - Check remote call response for changelog data before store it. 
+
+= 2.3.7 =
+Update - dynamic option added for contact element
+Update - demo link option  added for full image in filterable portfolio element
 
 = 2.3.6 =
 Update - Optimize resourse loading issue.

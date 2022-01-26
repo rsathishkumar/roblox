@@ -5,7 +5,7 @@ use Elementor\Widget_Base;
 use Elementor\Repeater;
 use Elementor\Controls_Manager;
 use Elementor\Group_Control_Typography;
-use Elementor\Scheme_Typography;
+Use Elementor\Core\Schemes\Typography;
 
 if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
 
@@ -146,7 +146,7 @@ class wkfe_site_social extends Widget_Base {
             'site_social_default_list',
             [
                 'type'    => Controls_Manager::REPEATER,
-                'fields'  => array_values( $repeater->get_controls() ),
+                'fields'  => $repeater->get_controls(),
                 'default' => [
                     [
                         'social_icon_picker' => esc_html__( 'fa fa-facebook', 'widgetkit-for-elementor' ),

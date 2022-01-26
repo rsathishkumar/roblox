@@ -109,7 +109,7 @@
 .codedropz-upload-inner {
 	overflow:hidden;
 	width:100%;
-	white-space: nowrap;
+	/*white-space: nowrap;*/
 	text-align:center;
 	text-overflow: ellipsis;
 	font-weight:inherit;
@@ -122,6 +122,7 @@
 	margin:5px 0;
 	font-size:30px;
 	line-height:32px;
+    word-break:break-word;
 }
 
 /* Add border on dragenter, drag etc */

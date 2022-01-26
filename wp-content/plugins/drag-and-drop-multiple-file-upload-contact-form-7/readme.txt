@@ -3,8 +3,8 @@ Contributors: glenwpcoder, yordansoares
 Donate link : http://codedropz.com/donation
 Tags: drag and drop, contact form 7, ajax uploader, multiple file, upload, contact form 7 uploader
 Requires at least: 3.0.1
-Tested up to: 5.7.1
-Stable tag: 1.3.5.9
+Tested up to: 5.8.1
+Stable tag: 1.3.6.2
 Requires PHP: 5.2.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -62,6 +62,7 @@ Checkout available features on **PRO version**.
 * **New** - Color Options (Filesize, ProgressBar, Filename etc)
 * **New** - Disable Button to Prevent Duplicate Submission
 * **New** - Image preview on email
+* **New** - File Remote Storage (Google Drive, Amazon S3, FTP, Dropbox)
 * Resize Image (ie: 800x800)
 * Improved Security
 * Optimized Code and Performance
@@ -82,6 +83,9 @@ An extension for **WPForms** - Transform your simple file upload into beautiful 
 
 * [Drag & Drop Multiple File Upload - WooCommerce](https://wordpress.org/plugins/drag-and-drop-multiple-file-upload-for-woocommerce/)
 An extension for **WooCommerce** - Transform your simple file upload into beautiful **"Drag & Drop Multiple File Upload"**.
+
+* [WooCommerce Memberships](https://www.codedropz.com/woocommerce-memberships/)
+An extension for **WooCommerce** - WooCommerce Memberships is not just another plugin for restricting your site’s content: it’s an easy-to-use, site-wide membership solution that brings your content, shop, and memberships together.
 
 **PLUGIN GUIDE - FREE VERSION**
 
@@ -135,6 +139,8 @@ To install this plugin see below:
 
 1. Upload the plugin files to the `/wp-content/plugins/drag-and-drop-multiple-file-upload-contact-form-7.zip` directory, or install the plugin through the WordPress plugins screen directly.
 2. Activate the plugin through the 'Plugins' screen in WordPress
+3. Go to "Contact > Drag & Drop Upload" for the settings.
+4. See [Tutorial](https://www.youtube.com/watch?v=DvuvmzIImYo)
 
 == Screenshots ==
 
@@ -146,6 +152,19 @@ To install this plugin see below:
 6. Multiple Drag and Drop Fields - Front
 
 == Changelog ==
+
+= 1.3.6.2 =
+- Added - Add settings link in the plugin page
+- Fixed - Long text/heading is hidden on the container
+- Fixed - Min file validation
+- Bug - Removed "accept" data attributes in mobile devices
+
+= 1.3.6.1 =
+- Fixed - Unable to delete if errors will show
+- Added “span” & “div” on heading tag option
+- Add spam filtering fixes
+- Added “Disable Auto Delete” option.
+
 
 = 1.3.5.9 =
 - Add accept types data attributes [See Here](https://wordpress.org/support/topic/the-user-sees-only-a-certain-type-of-files/)

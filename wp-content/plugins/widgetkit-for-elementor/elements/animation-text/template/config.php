@@ -5,7 +5,7 @@ use Elementor\Widget_Base;
 use Elementor\Repeater;
 use Elementor\Controls_Manager;
 use Elementor\Group_Control_Typography;
-use Elementor\Scheme_Typography;
+Use Elementor\Core\Schemes\Typography;
 
 if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
 
@@ -89,7 +89,7 @@ class wkfe_animation_text extends Widget_Base {
             'animate_text_list',
             [
                 'type'    => Controls_Manager::REPEATER,
-                'fields'  => array_values( $repeater->get_controls() ),
+                'fields'  => $repeater->get_controls(),
                 'default' => [
                     [
                         'animate_text' => esc_html__( 'Professional', 'widgetkit-for-elementor' ),
@@ -200,7 +200,7 @@ class wkfe_animation_text extends Widget_Base {
 				[
 					'name'     => 'animation_title_typography',
 					'label'    => esc_html__( 'Title Typography', 'widgetkit-for-elementor' ),
-					'scheme'   => Scheme_Typography::TYPOGRAPHY_4,
+					'scheme'   => Typography::TYPOGRAPHY_4,
 					'selector' => '{{WRAPPER}} .animation-text .text-slide .cd-headline',
 				]
 		);

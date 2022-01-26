@@ -42,4 +42,14 @@ jQuery(document).ready(function($) {
     }
   });
 
+  $('select#form-field-field_identification_type').change(function() {
+    var options = $('#form-field-field_identification_type option');
+
+    var values = $.map(options ,function(option) {
+      $('.elementor-field-group-'+option.value).hide();
+    });
+    var selected_val = $(this).val();
+    $('.elementor-field-group-'+selected_val).show();
+  });
+
 });
