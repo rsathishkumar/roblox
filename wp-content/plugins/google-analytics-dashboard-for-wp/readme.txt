@@ -3,8 +3,8 @@ Contributors: chriscct7, smub
 Donate link: http://www.wpbeginner.com/wpbeginner-needs-your-help/
 Tags: analytics,google analytics,google analytics dashboard,google analytics plugin,google analytics widget,gtag
 Requires at least: 4.8.0
-Tested up to: 5.8
-Stable tag: 7.2.1
+Tested up to: 5.9
+Stable tag: 7.3.2
 Requires PHP: 5.5
 License: GPL v3
 
@@ -89,6 +89,10 @@ See what one business owner is saying about ExactMetrics:
 * WPForms Google Analytics - Automatically setup form conversion tracking for WPForms.
 * Formidable Forms Google Analytics - Automatically setup form conversion tracking for Formidable Forms.
 * Gravity Forms Google Analytics - Automatically setup form conversion tracking for Gravity Forms.
+* YouTube Google Analytics - Automatically track video starts, stops, and watch progression of video plays of your YouTube videos.
+* Vimeo Google Analytics - Automatically track video starts, stops, and watch progression of video plays of your Vimeo videos.
+* HTML5 Video Google Analytics - Automatically track video starts, stops, and watch progression of video plays of your Vimeo videos.
+* Exclude from Tracking Google Analytics - Disable loading of Google Analytics tracking on specific pages or posts.
 * Contact Form 7 Google Analytics - Automatically setup form conversion tracking for Contact Form 7.
 * Yoast Google Analytics - Automatically setup SEO score tracking for Yoast SEO with custom dimensions.
 * Pretty Links Google Analytics - Automatically setup affiliate link tracking for Pretty Links.
@@ -170,7 +174,32 @@ You can translate Google Analytics Dashboard for WP by ExactMetrics on [translat
 4. Want more features? <a href="https://www.exactmetrics.com/?utm_source=wprepo&utm_medium=link&utm_campaign=liteversion">Purchase ExactMetrics Pro</a>!
 
 == Changelog ==
-= 7.2.1: November 3, 2021 =
+= 7.3.2: January 25, 2022 =
+- Fixed: We fixed the fatal error that occurred due to a generic class name conflict.
+- Fixed: Fixed errors some users were having with our Exclude from Tracking feature.
+
+= 7.3.1: January 24, 2022 =
+- New: With our new Exclude from Tracking Feature admins can now exclude any page or post from tracking.
+- Fixed: We fixed the local gtag.js where it didn’t work with only the GAv4 connection.
+- Fixed: We fixed the messages in the plugin settings based on the Media Addon activation status.
+- Tweek: We categorized and enhanced the plugin notifications.
+- Fixed: We fixed Javascript errors when the CookieBot plugin is active and the Forms addon is not.
+- Fixed: We fixed UTM parameters in tracking links.
+- Fixed: We remove the type attribute from the script tag if the current theme supports html5.
+- Fixed: We fixed GA4 eCommerce missing events.
+- Fixed: We fixed the incorrect numbers for Year In Review average page views.
+- Fixed: We fixed the integration with Enfold theme Ajax forms where conversions were not being tracked.
+- Fixed: We fixed the backward compatibility for AffiliateWP versions below 2.7.
+
+= 7.3.0: December 14, 2021 =
+- New: From January 1 to 14, 2022, a limited time only Year In Review report will appear in the Reports section to reflect on your site's analytics in 2021 and offer insights and suggestions for improvement.
+- New In Pro: We've released a new integration with AffiliateWP to make it super simple to see how your affiliates are impacting your eCommerce stores.
+- New In Pro: We've released our ExactMetrics Media addon which makes it easy to track YouTube, Vimeo and media-library-uploaded videos.
+- Tweak: We've ensured all links to our documentation will open in a new tab to make them easier to use.
+- Fixed: An issue with the headline analyzer has been fixed that could have caused it to unpin in Gutenberg when another plugin's item was unpinned.
+- Fixed: A bug that caused the bounce rate box to sometimes show twice on the GAv3 dashboard widget has been fixed.
+
+= 7.2.0: November 3, 2021 =
 - New In Pro: 7 day traffic Email Summaries
 - New In Pro: Compatibility for the Complianz and CookieYes cookie notice plugins.
 - Tweak: Cleaned up the outputting of the GA compatibility layer feature.

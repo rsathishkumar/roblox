@@ -60,6 +60,15 @@ function exactmetrics_track_user( $user_id = -1 ) {
 	return apply_filters( 'exactmetrics_track_user', $track_user, $user );
 }
 
+/**
+ * Skip tracking status.
+ *
+ * @return bool
+ */
+function exactmetrics_skip_tracking() {
+    return (bool) apply_filters( 'exactmetrics_skip_tracking', false );
+}
+
 function exactmetrics_get_client_id( $payment_id = false ) {
 	if ( is_object( $payment_id ) ) {
 		$payment_id = $payment_id->ID;
@@ -1268,15 +1277,12 @@ function exactmetrics_detect_tracking_code_error( $body, $type = 'ua' ) {
 		return $errors;
 	}
 
-	if (
-		( $type === 'ua' && false === strpos( $body, '__gaTracker' ) ) ||
-		( $type === 'v4' && false === strpos( $body, '__gtagTracker' ) )
-	) {
+	if ( $type === 'v4' && false === strpos( $body, '__gtagTracker' ) ) {
 		$errors[] = $cache_error;
 		return $errors;
 	}
 
-	$limit = 'gtag' === ExactMetrics()->get_tracking_mode() ? 3 : 2;
+	$limit = 3;
 
 	// TODO: Need to re-evaluate this regularly when third party plugins start supporting v4
 	$limit += exactmetrics_count_third_party_ua_codes( $body, $type );
@@ -1693,10 +1699,15 @@ function exactmetrics_load_gutenberg_app() {
 function exactmetrics_get_frontend_analytics_script_atts() {
 	$attr_string = '';
 
-	$attributes = apply_filters( 'exactmetrics_tracking_analytics_script_attributes', array(
-		'type'         => "text/javascript",
-		'data-cfasync' => 'false'
-	) );
+    $default_attributes = [
+		'data-cfasync'     => 'false',
+		'data-wpfc-render' => 'false',
+    ];
+    if ( ! current_theme_supports( 'html5', 'script' ) ) {
+		$default_attributes['type'] = 'text/javascript';
+    }
+
+	$attributes = apply_filters( 'exactmetrics_tracking_analytics_script_attributes', $default_attributes);
 
 	if ( ! empty( $attributes ) ) {
 		foreach ( $attributes as $attr_name => $attr_value ) {
