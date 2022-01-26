@@ -78,8 +78,8 @@ function bodhi_svgs_inline() {
 
 				// use custom class if set
 				$css_target_array = array(
-					'Bodhi' => 'img.'. $bodhi_svgs_options['css_target'],
-					'ForceInlineSVG' => $bodhi_svgs_options['css_target']
+					'Bodhi' => 'img.'. esc_attr($bodhi_svgs_options['css_target']),
+					'ForceInlineSVG' => esc_attr($bodhi_svgs_options['css_target'])
 				);
 
 			} else {
@@ -99,7 +99,7 @@ function bodhi_svgs_inline() {
 
 			// if custom target is set, use that, otherwise use default
 			if ( ! empty( $bodhi_svgs_options['css_target'] ) ) {
-				$css_target = 'img.'. $bodhi_svgs_options['css_target'];
+				$css_target = 'img.'. esc_attr($bodhi_svgs_options['css_target']);
 			} else {
 				$css_target = 'img.style-svg';
 			}
@@ -141,8 +141,14 @@ function bodhi_svgs_inline() {
 		wp_register_script( 'bodhi_svg_inline', BODHI_SVGS_PLUGIN_URL . $bodhi_svgs_js_path, array( 'jquery' ), '1.0.0', $bodhi_svgs_js_footer );
 		wp_enqueue_script( 'bodhi_svg_inline' );
 
-		wp_localize_script( 'bodhi_svg_inline', 'cssTarget', $css_target_array );
-		wp_localize_script( 'bodhi_svg_inline', 'ForceInlineSVGActive', $force_inline_svg_active );
+		wp_add_inline_script(
+			'bodhi_svg_inline',
+			sprintf(
+			  'cssTarget=%s;ForceInlineSVGActive=%s;',
+			  json_encode($css_target_array),
+			  json_encode($force_inline_svg_active)
+			)
+		  );
 
 	}
 

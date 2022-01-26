@@ -7,8 +7,8 @@ Donate link: https://www.paypal.me/vaakash/
 License: GPLv2 or later
 Requires PHP: 5.3
 Requires at least: 4.9.0
-Tested up to: 5.7
-Stable tag: 5.4
+Tested up to: 5.8
+Stable tag: 5.6
 
 Create custom "Shortcodes" easily for HTML, JavaScript snippets and use the shortcodes within posts, pages & widgets.
 
@@ -48,6 +48,13 @@ Shortcoder plugin allows to create a custom shortcodes for HTML, JavaScript and 
 Similarly shortcodes can be created for frequently used snippets.
 
 You can also add [custom parameters](https://www.aakashweb.com/docs/shortcoder/) (like `%%id%%`) inside the snippets, and change it's value like `[sc name="youtube" id="GrlRADfvjII"]` when using them.
+
+### Using in block editor
+
+Though shortcodes can be used in **any** place manually, Shortcoder provides below options to select and insert the shortcodes created easily when working with the block editor.
+
+* Shortcoder block
+* Toolbar button to select and insert shortcodes inline (under "more")
 
 ### Links
 
@@ -99,12 +106,27 @@ No, right now the plugin supports only HTML, Javascript and CSS as shortcode con
 4. A shortcode inserted into post.
 5. Shortcoder block for Gutenberg editor.
 6. Shortcoder executed in the post.
+7. Insert shortcode inline from block editor toolbar.
 
 [More Screenshots](https://www.aakashweb.com/wordpress-plugins/shortcoder/)
 
 
 
 ## Changelog
+
+### 5.6
+* New: Shortcodes available to copy/insert are now closed by default.
+* Fix: Custom parameter value 0 is not displayed.
+* Fix: Support for WordPress 5.8
+
+### 5.5
+* New: General settings page to configure default editor and shortcode content.
+* New: Block to insert shortcode rewritten from scratch.
+* New: Toolbar button to insert shortcodes inline.
+* New: Shortcodes are now closed by default when inserted from editor.
+* Fix: Custom fields parsing issue when they are placed next to each other.
+* Fix: Enclosed content in block input now retains multi-line.
+* Fix: Minor refinements to UI.
 
 ### 5.4
 * New: Code editor is now loaded locally and not from cloudflare.

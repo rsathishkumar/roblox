@@ -9,7 +9,7 @@ class SC_Admin_Form{
         $html = '<table class="form-table ' . $class . '">';
         
         foreach( $rows as $row ){
-            $html .= '<tr ' . ( isset( $row[2] ) ? $row[2]  : '' ) . '>';
+            $html .= '<tr ' . ( isset( $row[2] ) ? $row[2] : '' ) . '>';
                 $html .= '<th>' . ( isset( $row[0] ) ? $row[0] : '' ) . '</th>';
                 $html .= '<td>' . ( isset( $row[1] ) ? $row[1] : '' ) . '</td>';
             $html .= '</tr>';
@@ -27,58 +27,40 @@ class SC_Admin_Form{
 
     public static function field( $field_type, $params = array() ){
         
-        $defaults = array(
+        $fields = array( 'text', 'select', 'checkbox', 'textarea' );
 
-            'text' => array(
-                'type' => 'text',
-                'value' => '',
-                'id' => '',
-                'class' => 'regular-text',
-                'name' => '',
-                'placeholder' => '',
-                'required' => '',
-                'helper' => '',
-                'tooltip' => '',
-                'custom' => ''
-            ),
-
-            'select' => array(
-                'id' => '',
-                'class' => '',
-                'name' => '',
-                'list' => array(),
-                'value' => '',
-                'helper' => '',
-                'tooltip' => '',
-                'custom' => ''
-            ),
-
-            'textarea' => array(
-                'type' => 'text',
-                'value' => '',
-                'name' => '',
-                'id' => '',
-                'class' => '',
-                'placeholder' => '',
-                'rows' => '',
-                'cols' => '',
-                'helper' => '',
-                'tooltip' => '',
-                'custom' => ''
-            )
-
+        $default_props = array(
+            'id' => '',
+            'name' => '',
+            'class' => '',
+            'value' => '',
+            'list' => array(),
+            'type' => '',
+            'required' => '',
+            'placeholder' => '',
+            'rows' => '',
+            'cols' => '',
+            'helper' => '',
+            'tooltip' => '',
+            'before_text' => '',
+            'after_text' => '',
+            'custom' => ''
         );
+
+        if( !in_array( $field_type, $fields ) ){
+            return '';
+        }
         
-        $params = wp_parse_args( $params, $defaults[ $field_type ] );
+        $params = Shortcoder::set_defaults( $params, $default_props );
         $field_html = '';
-        
+
         extract( $params, EXTR_SKIP );
         
         $id_attr = empty( $id ) ? '' : 'id="' . $id . '"';
 
         switch( $field_type ){
             case 'text':
-                $field_html = "<input type='$type' class='$class' $id_attr name='$name' value='$value' placeholder='$placeholder' " . ( $required ? "required='$required'" : "" ) . "  $custom />";
+                $field_html = "<input type='text' class='$class' $id_attr name='$name' value='$value' placeholder='$placeholder' " . ( $required ? "required='$required'" : "" ) . "  $custom />";
             break;
             
             case 'select':
@@ -90,7 +72,16 @@ class SC_Admin_Form{
             break;
 
             case 'textarea':
-                $field_html .= "<textarea $id_attr name='$name' class='$class' placeholder='$placeholder' rows='$rows' cols='$cols' $custom>$value</textarea>";
+                $field_html .= "<textarea $id_attr name='$name' class='$class' placeholder='$placeholder' rows='$rows' cols='$cols' $custom>" . esc_textarea( $value ) . "</textarea>";
+            break;
+
+            case 'checkbox':
+                $field_html .= '<div class="radios_wrap">';
+                foreach( $list as $k => $v ){
+                    $checked = in_array( $k, $value ) ? ' checked="checked"' : '';
+                    $field_html .= "<label class='lbl_margin' $custom><input type='checkbox' name='{$name}[]' class='$class' value='$k' $id_attr $checked />&nbsp;$v </label>";
+                }
+                $field_html .= '</div>';
             break;
 
         }

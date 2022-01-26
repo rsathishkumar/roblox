@@ -9,6 +9,12 @@ $(document).ready(function(){
             }
         }
 
+        if(typeof parent.sc_block_inline_insert === 'function'){
+            if(parent.sc_block_inline_insert(content)){
+                return true;
+            }
+        }
+
         if(typeof parent.send_to_editor === 'function'){
             parent.send_to_editor(content);
         }else{
@@ -50,10 +56,7 @@ $(document).ready(function(){
         });
 
         sc = '[sc name="' + name + '" ' + params + ']';
-        
-        if(enclosed == 'true'){
-            sc += '[/sc]';
-        }
+        sc += '[/sc]';
 
         return sc;
 
@@ -170,6 +173,10 @@ $(document).ready(function(){
     $('.cfe_amt').on('click', function(){
         var $btn = $(this).closest('.cfe_form').find('.cfe_btn');
         $btn.attr('href', $btn.data('link') + $(this).val());
+    });
+
+    $('.note').on('click', function(){
+        $(this).find('table').slideToggle();
     });
 
     window.addEventListener('message', function(e){

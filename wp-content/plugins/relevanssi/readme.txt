@@ -3,9 +3,9 @@ Contributors: msaari
 Donate link: https://www.relevanssi.com/buy-premium/
 Tags: search, relevance, better search, product search, woocommerce search
 Requires at least: 4.9
-Tested up to: 5.7.1
+Tested up to: 5.8.2
 Requires PHP: 7.0
-Stable tag: 4.13.1
+Stable tag: 4.14.6
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -58,9 +58,6 @@ Do note that using Relevanssi may require large amounts (hundreds of megabytes) 
 * [WP CLI commands](https://www.relevanssi.com/user-manual/wp-cli/).
 * [Related posts](https://www.relevanssi.com/knowledge-base/related-posts/).
 * [Redirects for searches](https://www.relevanssi.com/user-manual/redirects/).
-
-= Relevanssi in Facebook =
-You can find [Relevanssi in Facebook](https://www.facebook.com/relevanssi).
 
 == Screenshots ==
 
@@ -131,6 +128,69 @@ Each document database is full of useless words. All the little words that appea
 * John Calahan for extensive 4.0 beta testing.
 
 == Changelog ==
+= 4.14.6 =
+* Security fix: Extra hardening for AJAX requests. Some AJAX actions in Relevanssi could leak information to site subscribers who knew what to look for.
+
+= 4.14.5 =
+* Security fix: Any registered user could empty the Relevanssi index by triggering the index truncate AJAX action. That is no longer possible.
+* New feature: The [searchform] shortcode has a new parameter, 'checklist', which you can use to create taxonomy checklists.
+* Changed behaviour: The `relevanssi_search_again` parameter array has more parameters the filter can modify.
+* Changed behaviour: The `relevanssi_show_matches` filter hook gets the post object as the second parameter.
+* Minor fix: The `cats` and `tags` parameters work better and support array values.
+
+= 4.14.4 =
+* Minor fix: `relevanssi_orderby` did not always accept an array-format orderby parameter.
+* Minor fix: Removes a highlighting problem stemming from uppercase search terms.
+* Minor fix: Relevanssi removes highlights better from inside multiline HTML tags.
+* Minor fix: When image attachment indexing was disabled, saving image attachments would still index the images. Image attachment blocking is now a `relevanssi_indexing_restriction` filter function, which means it's always active.
+
+= 4.14.3 =
+* Security fix: User searches page had a XSS vulnerability.
+
+= 4.14.2 =
+* Minor fix: Remove unnecessary database calls from admin pages.
+* Minor fix: Improved Oxygen compatibility.
+
+= 4.14.1 =
+* Adds a missing file.
+
+= 4.14.0 =
+* New feature: New filter hook `relevanssi_render_blocks` controls whether Relevanssi renders blocks in a post or not. If you are having problems updating long posts with lots of blocks, having this filter hook return `false` for the post in question will likely help, as rendering the blocks in a long post can take huge amounts of memory.
+* New feature: The user searches page has been improved a lot.
+* New feature: The [searchform] shortcode has a new parameter, 'post_type_boxes', which creates a checkbox for each post type you list in the value. For example [searchform post_type_boxes='*post,page'] would create a search with a checkbox for 'post' and 'page' post types, with 'post' pre-checked.
+* New feature: You can now have multiple dropdowns in one [searchform] shortcode. Anything that begins with 'dropdown' is considered a dropdown parameter, so you can do [searchform dropdown_1='category' dropdown_2='post_tag'] for example.
+* New feature: New filter hook `relevanssi_search_params` lets you filter search parameters after they've been collected from the WP_Query.
+* New feature: New filter hook `relevanssi_excerpt_post` lets you make Relevanssi skip creating excerpts for specific posts.
+* Changed behaviour: Filter hooks `relevanssi_1day`, `relevanssi_7days` and `relevanssi_30days` are removed, as the user searches page is now different. The default value for `relevanssi_user_searches_limit` is now 100 instead of 20.
+* Minor fix: In some languages, iOS uses „“ for quotes. Relevanssi now understands those for the phrase operator.
+* Minor fix: Stops Relevanssi from blocking the admin search for WooCommerce coupons and other WooCommerce custom post types.
+* Minor fix: Fixes problems with the WP-Members compatibility.
+* Minor fix: New parameter for `relevanssi_tokenize()` introduces the context (indexing or search query). The `relevanssi_extract_phrases()` is only used on search queries.
+* Minor fix: Relevanssi won't let you adjust synonyms and stopwords anymore if you use Polylang and are in 'Show all languages' mode.
+* Minor fix: Highlighting is improved by a more precise HTML entity filter, thanks to Jacob Bearce.
+
+= 4.13.3.1 =
+* Minor fix: The Bricks compatibility was broken. This version fixes it.
+
+= 4.13.3 =
+* New feature: You can now add a post type dropdown to search forms with the [searchform] shortcode with the parameter 'dropdown' set to 'post_type'.
+* New feature: Adds compatibility for Product GTIN (EAN, UPC, ISBN) for WooCommerce plugin.
+* New feature: New filter hook `relevanssi_post_to_excerpt` lets you filter the post object before an excerpt is created from it.
+* New feature: Relevanssi is now compatible with the Bricks page builder theme (requires Bricks 1.3.2).
+* Minor fix: The ″ character is now counted as a quote.
+* Minor fix: Running indexing through WP CLI doesn't cause PHP notices anymore.
+* Minor fix: Sometimes the Did you mean would return really weird long suggestions from the search logs. That won't happen anymore.
+* Minor fix: Improves tax_query handling in fringe cases with multiple AND clauses joined together with OR.
+* Minor fix: Oxygen compatibility has been improved. Rich text fields and updating posts when they are saved in Oxygen now work better, and revisions are no longer indexed.
+* Minor fix: Searching without a search term works much better now, you get more posts in the results (default value is up to 500).
+
+= 4.13.2 =
+* New feature: Adds support for Avada Live Search.
+* New feature: Adds support for Fibo Search.
+* Minor fix: Elementor library searches are not broken anymore when Relevanssi is enabled in admin.
+* Minor fix: Relevanssi now understands array-style post_type[] parameters.
+* Minor fix: Relevanssi now automatically considers the Turkish 'ı' the same as 'i'.
+
 = 4.13.1 =
 * New feature: Adds compatibility for WP-Members plugin, preventing blocked posts from showing up in the search results.
 * New feature: New function `relevanssi_get_attachment_suffix()` can be used to return the attachment file suffix based on a post object or a post ID.
@@ -204,28 +264,37 @@ Each document database is full of useless words. All the little words that appea
 * Minor fix: Old legacy scripts that caused Javascript warnings on admin pages have been removed.
 * Minor fix: In some cases, having less than or greater than symbols in PDF content would block that PDF content from being indexed.
 
-= 4.10.2 =
-* New feature: You can force Relevanssi to be active by setting the query variable `relevanssi` to `true`. Thanks to Jan Willem Oostendorp.
-* Changed behaviour: Relevanssi has been moved from `the_posts` filter to `posts_pre_query`. This change doesn't do much, but increases performance slightly as WordPress needs to do less useless work, as now the default query is no longer run. Thanks to Jan Willem Oostendorp.
-* Minor fix: Highlighting didn't work properly when highlighting something immediately following a HTML tag.
-* Minor fix: You can no longer set the value of minimum word length to less than 1 or higher than 9 from the settings page.
-* Minor fix: Importing options broke synonym and stopword settings.
-* Minor fix: Improves the Rank Math SEO compatibility to avoid errors in plugin activation.
-* Minor fix: WPML search results that included non-post results caused fatal errors and crashes. This fixes the crashing and makes non-post results work better in both WPML and Polylang.
-
-= 4.10.1 =
-* Major fix: The multilingual stopwords and synonyms were used based on the global language. Now when indexing posts, the post language is used instead of the global language.
-
-= 4.10.0 =
-* New feature: Relevanssi now supports multilingual synonyms and stopwords. Relevanssi now has a different set of synonyms and stopwords for each language. This feature is compatible with WPML and Polylang.
-* New feature: SEO by Rank Math compatibility is added: posts marked as 'noindex' with Rank Math are not indexed by Relevanssi.
-* Minor fix: With keyword matching set to 'whole words' and the 'expand highlights' disabled, words that ended with an 's' weren't highlighted correctly.
-* Minor fix: The 'Post exclusion' setting didn't work correctly. It has been fixed.
-* Minor fix: It's now impossible to set negative weights in searching settings. They did not work as expected anyway.
-* Minor fix: Relevanssi had an unnecessary index on the `doc` column in the `wp_relevanssi` database table. It is now removed to save space. Thanks to Matthew Wang.
-* Minor fix: Improved Oxygen Builder support makes sure `ct_builder_shortcodes` custom field is always indexed.
-
 == Upgrade notice ==
+= 4.14.6 =
+* Security fix: Extra security checks for AJAX actions.
+
+= 4.14.5 =
+* Security fix: registered users could delete the Relevanssi index.
+
+= 4.14.4 =
+* Small bug fixes.
+
+= 4.14.3 =
+* Security fix: User searches page had a XSS vulnerability.
+
+= 4.14.2 =
+* Removes database calls on admin pages.
+
+= 4.14.1 =
+* Adds a missing file.
+
+= 4.14.0 =
+* User searches page update, bug fixes and improvements.
+
+= 4.13.3.1 =
+* Fixes the Bricks compatibility.
+
+= 4.13.3 =
+* Bug fixes and small improvements.
+
+= 4.13.2 =
+* Small bug and compatibility fixes.
+
 = 4.13.1 =
 * Compatibility for WP-Members added.
 

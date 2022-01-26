@@ -198,36 +198,6 @@
     font-weight: bold;
 }
 
-/* Coffee - metabox */
-
-.cfe_bottom{
-    background: #fff;
-    padding: 15px;
-    display: flex;
-    border: 1px solid #e3bbac;
-    align-items: center;
-    box-shadow: 0 1px 1px rgba(0,0,0,.04);
-}
-.cfe_bottom > * {
-    margin: 0 15px 0 0;
-    vertical-align: middle;
-}
-.cfe_bottom h3{
-    font-size: 15px;
-}
-.cfe_bottom img{
-    height: 32px;
-}
-.cfe_form{
-    display: flex;
-}
-.cfe_form select{
-    width: 100%;
-    margin-right: 1em;
-}
-.cfe_form .button{
-    text-align: center;
-}
 
 /** Changelog **/
 .sc_changelog{
@@ -322,59 +292,51 @@
 .feedback a:hover{
     text-decoration: underline;
 }
-.feedback .ufw{
-    background: linear-gradient(180deg, #2196F3, #58a4e1);
-    color: #fff;
-    border-radius: 5px;
-    padding: 10px;
-    margin: 15px 0 0 0;
-}
-.feedback .ufw a{
-    color: #fff;
-}
-.feedback .ufw p{
-    opacity: 0.8;
+.feedback .button{
     display: block;
-    font-style: italic;
-    margin: 5px 0 0 0;
+    text-align: center;
+    margin-bottom: 10px;
 }
-.feedback .ufw h4{
-    margin: 0 0 10px 0;
-    font-size: 1.3em;
+.feedback .button:last-child{
+    margin-bottom: 0;
 }
-.feedback .ufw h4 i{
-    font-weight: normal;
+.feedback .button .dashicons{
+    margin: 5px 5px 0 0;
 }
-.feedback .ufw .balloon{
-    float: right;
+.feedback .button:hover{
+    text-decoration: none;
 }
-
-/** Rate & review **/
-.rate_review{
+.feedback > *:last-child{
+    margin-bottom: 0;
+}
+.feedback .twitter_btn.button{
+    background: #1b95e0;
+    color: #fff;
+    border-color: transparent;
+}
+.feedback .facebook_btn.button{
+    background: #4080ff;
+    color: #fff;
+    border-color: transparent;
+}
+.promo_slides > .promo_slide{
+    display: none;
+}
+.promo_slides > .promo_slide:first-child{
     display: block;
-    padding: 15px;
-    background: #f6f6f6;
-    margin-top: 15px;
+}
+.promo_slide img {
+    width: 100%;
     border-radius: 5px;
+    margin: 7px 0 0 0;
+}
+.promo_btn{
     text-decoration: none;
-    color: #444;
 }
-.rate_review h4 {
-    margin: 0;
-    font-size: 15px;
-}
-.rate_review p {
-    margin: 15px 0 0 0;
-}
-.rate_review .dashicons {
-    float: right;
-    font-size: 32px;
-    margin: 10px;
-    color: #FFC107;
-}
-.rate_review:hover{
-    background-color: #fcfcfc;
-    text-decoration: none;
+.promo_btns{
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
 }
 
 .stars {

@@ -136,15 +136,15 @@ function relevanssi_search( $args ) {
 	 */
 	$remove_stopwords = apply_filters( 'relevanssi_remove_stopwords_in_titles', true );
 
-	$terms['terms'] = array_keys( relevanssi_tokenize( $q, $remove_stopwords, $min_length ) );
+	$terms['terms'] = array_keys( relevanssi_tokenize( $q, $remove_stopwords, $min_length, 'search_query' ) );
 
 	$terms['original_terms'] = $q_no_synonyms !== $q
-		? array_keys( relevanssi_tokenize( $q_no_synonyms, $remove_stopwords, $min_length ) )
+		? array_keys( relevanssi_tokenize( $q_no_synonyms, $remove_stopwords, $min_length, 'search_query' ) )
 		: $terms['terms'];
 
 	if ( has_filter( 'relevanssi_stemmer' ) ) {
 		do_action( 'relevanssi_disable_stemmer' );
-		$terms['original_terms'] = array_keys( relevanssi_tokenize( $q_no_synonyms, $remove_stopwords, $min_length ) );
+		$terms['original_terms'] = array_keys( relevanssi_tokenize( $q_no_synonyms, $remove_stopwords, $min_length, 'search_query' ) );
 		do_action( 'relevanssi_enable_stemmer' );
 	}
 
@@ -170,6 +170,9 @@ function relevanssi_search( $args ) {
 	 * @param string The MySQL code that restricts the query.
 	 */
 	$query_restrictions = apply_filters( 'relevanssi_where', $query_restrictions );
+	if ( ! $query_restrictions ) {
+		$query_restrictions = '';
+	}
 
 	/**
 	 * Filters the meta query JOIN for the Relevanssi search query.
@@ -223,7 +226,7 @@ function relevanssi_search( $args ) {
 			);
 
 			$query   = relevanssi_generate_search_query( $term, $search_again, $no_terms, $query_join, $this_query_restrictions );
-			$matches = $wpdb->get_results( $query ); // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared,WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$matches = $wpdb->get_results( $query ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared,WordPress.DB.PreparedSQL.NotPrepared
 
 			if ( count( $matches ) < 1 ) {
 				continue;
@@ -318,23 +321,21 @@ function relevanssi_search( $args ) {
 			}
 		}
 
-		if ( $no_matches ) {
-			if ( $search_again ) {
-				// No hits even with fuzzy search!
-				$search_again = false;
-			} else {
-				if ( 'sometimes' === $fuzzy ) {
-					$search_again = true;
-				}
-			}
-		} else {
+		if ( $search_again ) {
 			$search_again = false;
+		} elseif ( $no_matches && ! $search_again && 'sometimes' === $fuzzy ) {
+			$search_again = true;
 		}
+
 		$params = array(
-			'no_matches'   => $no_matches,
-			'doc_weight'   => $doc_weight,
-			'terms'        => $terms,
-			'search_again' => $search_again,
+			'doc_weight'         => $doc_weight,
+			'no_matches'         => $no_matches,
+			'operator'           => $operator,
+			'phrase_queries'     => $phrase_queries,
+			'query_join'         => $query_join,
+			'query_restrictions' => $query_restrictions,
+			'search_again'       => $search_again,
+			'terms'              => $terms,
 		);
 		/**
 		 * Filters the parameters for fallback search.
@@ -345,26 +346,30 @@ function relevanssi_search( $args ) {
 		 *
 		 * @param array The search parameters.
 		 */
-		$params       = apply_filters( 'relevanssi_search_again', $params );
-		$search_again = $params['search_again'];
-		$terms        = $params['terms'];
-		$doc_weight   = $params['doc_weight'];
-		$no_matches   = $params['no_matches'];
+		$params             = apply_filters( 'relevanssi_search_again', $params );
+		$doc_weight         = $params['doc_weight'];
+		$no_matches         = $params['no_matches'];
+		$operator           = $params['operator'];
+		$phrase_queries     = $params['phrase_queries'];
+		$query_join         = $params['query_join'];
+		$query_restrictions = $params['query_restrictions'];
+		$search_again       = $params['search_again'];
+		$terms              = $params['terms'];
 	} while ( $search_again );
 
 	if ( ! $remove_stopwords ) {
 		$strip_stops       = true;
-		$terms['no_stops'] = array_keys( relevanssi_tokenize( implode( ' ', $terms['terms'] ), $strip_stops, $min_length ) );
+		$terms['no_stops'] = array_keys( relevanssi_tokenize( implode( ' ', $terms['terms'] ), $strip_stops, $min_length, 'search_query' ) );
 
 		if ( $q !== $q_no_synonyms ) {
-			$terms['original_terms_no_stops'] = array_keys( relevanssi_tokenize( implode( ' ', $terms['original_terms'] ), $strip_stops, $min_length ) );
+			$terms['original_terms_no_stops'] = array_keys( relevanssi_tokenize( implode( ' ', $terms['original_terms'] ), $strip_stops, $min_length, 'search_query' ) );
 		} else {
 			$terms['original_terms_no_stops'] = $terms['no_stops'];
 		}
 
 		if ( has_filter( 'relevanssi_stemmer' ) ) {
 			do_action( 'relevanssi_disable_stemmer' );
-			$terms['original_terms_no_stops'] = array_keys( relevanssi_tokenize( implode( ' ', $terms['original_terms'] ), $strip_stops, $min_length ) );
+			$terms['original_terms_no_stops'] = array_keys( relevanssi_tokenize( implode( ' ', $terms['original_terms'] ), $strip_stops, $min_length, 'search_query' ) );
 			do_action( 'relevanssi_enable_stemmer' );
 		} else {
 			$terms['original_terms_no_stops'] = $terms['no_stops'];
@@ -373,7 +378,7 @@ function relevanssi_search( $args ) {
 		$terms['no_stops']                = $terms['terms'];
 		$terms['original_terms_no_stops'] = $terms['original_terms'];
 	}
-	$total_terms = count( $terms['no_stops'] );
+	$total_terms = count( $terms['original_terms_no_stops'] );
 
 	if ( isset( $doc_weight ) ) {
 		/**
@@ -710,10 +715,13 @@ function relevanssi_limit_filter( $query ) {
 		if ( $limit < 0 ) {
 			$limit = 500;
 		}
-		return $query . " ORDER BY tf DESC LIMIT $limit";
-	} else {
-		return $query;
+		if ( $termless_search ) {
+			$query = $query . " GROUP BY doc, item, type ORDER BY doc ASC LIMIT $limit";
+		} else {
+			$query = $query . " ORDER BY tf DESC LIMIT $limit";
+		}
 	}
+	return $query;
 }
 
 /**
@@ -908,6 +916,7 @@ function relevanssi_compile_search_args( $query, $q ) {
 	 * @param string The default relation, default 'AND'.
 	 */
 	$tax_query_relation = apply_filters( 'relevanssi_default_tax_query_relation', 'AND' );
+	$terms_found        = false;
 	if ( isset( $query->tax_query ) && empty( $query->tax_query->queries ) ) {
 		// Tax query is empty, let's get rid of it.
 		$query->tax_query = null;
@@ -929,14 +938,21 @@ function relevanssi_compile_search_args( $query, $q ) {
 			}
 			if ( is_string( $type ) && 'queries' === $type ) {
 				foreach ( $item as $tax_query_row ) {
+					if ( isset( $tax_query_row['terms'] ) ) {
+						$terms_found = true;
+					}
 					$tax_query[] = $tax_query_row;
 				}
 			}
 		}
-	} else {
+	}
+	if ( ! $terms_found ) {
 		$cat = false;
 		if ( isset( $query->query_vars['cats'] ) ) {
 			$cat = $query->query_vars['cats'];
+			if ( is_array( $cat ) ) {
+				$cat = implode( ',', $cat );
+			}
 		}
 		if ( empty( $cat ) ) {
 			$cat = get_option( 'relevanssi_cat' );
@@ -945,8 +961,9 @@ function relevanssi_compile_search_args( $query, $q ) {
 			$cat         = explode( ',', $cat );
 			$tax_query[] = array(
 				'taxonomy' => 'category',
-				'field'    => 'id',
+				'field'    => 'term_id',
 				'terms'    => $cat,
+				'operator' => 'IN',
 			);
 		}
 		$excat = get_option( 'relevanssi_excat' );
@@ -967,6 +984,9 @@ function relevanssi_compile_search_args( $query, $q ) {
 		$tag = false;
 		if ( ! empty( $query->query_vars['tags'] ) ) {
 			$tag = $query->query_vars['tags'];
+			if ( is_array( $tag ) ) {
+				$tag = implode( ',', $tag );
+			}
 			if ( false !== strpos( $tag, '+' ) ) {
 				$tag      = explode( '+', $tag );
 				$operator = 'AND';
@@ -1079,6 +1099,23 @@ function relevanssi_compile_search_args( $query, $q ) {
 			'author'             => $author,
 			'fields'             => $fields,
 		)
+	);
+
+	/**
+	 * Filters the Relevanssi search parameters after compiling.
+	 *
+	 * Relevanssi picks up the search parameters from the WP_Query query
+	 * variables and collects them in an array you can filter here.
+	 *
+	 * @param array    $search_params The search parameters.
+	 * @param WP_Query $query         The full WP_Query object.
+	 *
+	 * @return array The filtered parameters.
+	 */
+	$search_params = apply_filters(
+		'relevanssi_search_params',
+		$search_params,
+		$query
 	);
 
 	return $search_params;
@@ -1416,10 +1453,10 @@ function relevanssi_update_term_hits( &$term_hits, &$match_arrays, $match, $term
  * Increases a value. If it's not set, sets it first to the default value.
  *
  * @param int $value    The value to increase (passed by reference).
- * @param int $increase The amount to increase the value.
+ * @param int $increase The amount to increase the value, default 1.
  * @param int $default  The default value, default 0.
  */
-function relevanssi_increase_value( &$value, $increase, $default = 0 ) {
+function relevanssi_increase_value( &$value, $increase = 1, $default = 0 ) {
 	if ( ! isset( $value ) ) {
 		$value = $default;
 	}
@@ -1554,19 +1591,23 @@ function relevanssi_sort_results( &$hits, $orderby, $order, $meta_query ) {
 		 */
 		$orderby = apply_filters( 'relevanssi_orderby', $orderby );
 
-		/**
-		 * Filters the order parameter before Relevanssi sorts posts.
-		 *
-		 * @param string $order The order parameter, either 'asc' or 'desc'.
-		 * Default 'desc'.
-		 */
-		$order = apply_filters( 'relevanssi_order', $order );
+		if ( is_array( $orderby ) ) {
+			relevanssi_object_sort( $hits, $orderby, $meta_query );
+		} else {
+			/**
+			 * Filters the order parameter before Relevanssi sorts posts.
+			 *
+			 * @param string $order The order parameter, either 'asc' or 'desc'.
+			 * Default 'desc'.
+			 */
+			$order = apply_filters( 'relevanssi_order', $order );
 
-		if ( 'relevance' !== $orderby ) {
-			// Results are by default sorted by relevance, so no need to sort
-			// for that.
-			$orderby_array = array( $orderby => $order );
-			relevanssi_object_sort( $hits, $orderby_array, $meta_query );
+			if ( 'relevance' !== $orderby ) {
+				// Results are by default sorted by relevance, so no need to sort
+				// for that.
+				$orderby_array = array( $orderby => $order );
+				relevanssi_object_sort( $hits, $orderby_array, $meta_query );
+			}
 		}
 	}
 }
@@ -1597,33 +1638,44 @@ function relevanssi_adjust_match_doc( $match ) {
  * @param string $term               The search term.
  * @param bool   $search_again       If true, this is a repeat search (partial matching).
  * @param bool   $no_terms           If true, no search term is used.
- * @param string $query_join         The MySQL JOIN clause.
- * @param string $query_restrictions The MySQL query restrictions.
+ * @param string $query_join         The MySQL JOIN clause, default empty string.
+ * @param string $query_restrictions The MySQL query restrictions, default empty string.
  *
  * @return string The MySQL search query.
  */
 function relevanssi_generate_search_query( string $term, bool $search_again,
-bool $no_terms, string $query_join, string $query_restrictions ) : string {
+bool $no_terms, string $query_join = '', string $query_restrictions = '' ) : string {
 	global $relevanssi_variables;
 	$relevanssi_table = $relevanssi_variables['relevanssi_table'];
 
-	$term_cond = relevanssi_generate_term_where( $term, $search_again, $no_terms, get_option( 'relevanssi_fuzzy' ) );
+	if ( $no_terms ) {
+		$query = "SELECT DISTINCT(relevanssi.doc), 1 AS term, 1 AS term_reverse,
+		1 AS content, 1 AS title, 1 AS comment, 1 AS tag, 1 AS link, 1 AS
+		author, 1 AS category, 1 AS excerpt, 1 AS taxonomy, 1 AS customfield,
+		1 AS mysqlcolumn, 1 AS taxonomy_detail, 1 AS customfield_detail, 1 AS
+		mysqlcolumn_detail, type, item, 1 AS tf
+		FROM $relevanssi_table AS relevanssi $query_join
+		WHERE relevanssi.term = relevanssi.term $query_restrictions";
+	} else {
+		$term_cond = relevanssi_generate_term_where( $term, $search_again, $no_terms, get_option( 'relevanssi_fuzzy' ) );
 
-	$content_boost = floatval( get_option( 'relevanssi_content_boost', 1 ) );
-	$title_boost   = floatval( get_option( 'relevanssi_title_boost' ) );
-	$link_boost    = floatval( get_option( 'relevanssi_link_boost' ) );
-	$comment_boost = floatval( get_option( 'relevanssi_comment_boost' ) );
+		$content_boost = floatval( get_option( 'relevanssi_content_boost', 1 ) );
+		$title_boost   = floatval( get_option( 'relevanssi_title_boost' ) );
+		$link_boost    = floatval( get_option( 'relevanssi_link_boost' ) );
+		$comment_boost = floatval( get_option( 'relevanssi_comment_boost' ) );
 
-	$tag = ! empty( $post_type_weights['post_tag'] ) ? $post_type_weights['post_tag'] : $relevanssi_variables['post_type_weight_defaults']['post_tag'];
-	$cat = ! empty( $post_type_weights['category'] ) ? $post_type_weights['category'] : $relevanssi_variables['post_type_weight_defaults']['category'];
+		$tag = ! empty( $post_type_weights['post_tag'] ) ? $post_type_weights['post_tag'] : $relevanssi_variables['post_type_weight_defaults']['post_tag'];
+		$cat = ! empty( $post_type_weights['category'] ) ? $post_type_weights['category'] : $relevanssi_variables['post_type_weight_defaults']['category'];
 
-	// Clean: $term is escaped, as are $query_restrictions.
-	$query = "SELECT DISTINCT(relevanssi.doc), relevanssi.*, relevanssi.title * $title_boost +
-	relevanssi.content * $content_boost + relevanssi.comment * $comment_boost +
-	relevanssi.tag * $tag + relevanssi.link * $link_boost +
-	relevanssi.author + relevanssi.category * $cat + relevanssi.excerpt +
-	relevanssi.taxonomy + relevanssi.customfield + relevanssi.mysqlcolumn AS tf
-	FROM $relevanssi_table AS relevanssi $query_join WHERE $term_cond $query_restrictions";
+		// Clean: $term is escaped, as are $query_restrictions.
+		$query = "SELECT DISTINCT(relevanssi.doc), relevanssi.*, relevanssi.title * $title_boost +
+		relevanssi.content * $content_boost + relevanssi.comment * $comment_boost +
+		relevanssi.tag * $tag + relevanssi.link * $link_boost +
+		relevanssi.author + relevanssi.category * $cat + relevanssi.excerpt +
+		relevanssi.taxonomy + relevanssi.customfield + relevanssi.mysqlcolumn AS tf
+		FROM $relevanssi_table AS relevanssi $query_join WHERE $term_cond $query_restrictions";
+	}
+
 	/**
 	 * Filters the Relevanssi search query.
 	 *
@@ -1673,6 +1725,9 @@ function relevanssi_compile_common_args( $query ) {
 	$date_query = relevanssi_wp_date_query_from_query_vars( $query );
 
 	$post_type = false;
+	if ( isset( $query->query_vars['post_type'] ) && is_array( $query->query_vars['post_type'] ) ) {
+		$query->query_vars['post_type'] = implode( ',', $query->query_vars['post_type'] );
+	}
 	if ( isset( $query->query_vars['post_type'] ) && 'any' !== $query->query_vars['post_type'] ) {
 		$post_type = $query->query_vars['post_type'];
 	}
@@ -1700,7 +1755,19 @@ function relevanssi_compile_common_args( $query ) {
 	);
 }
 
-function relevanssi_add_include_matches( &$matches, $include, $params ) {
+/**
+ * Adds posts to the matches list from the other term queries.
+ *
+ * Without this functionality, AND searches would not return all posts. If a
+ * post appears within the best results for one word, but not for another word
+ * even though the word appears in the post (because of throttling), the post
+ * would be excluded. This functionality makes sure it is included.
+ *
+ * @param array $matches The found posts array.
+ * @param array $include The posts to include.
+ * @param array $params  Search parameters.
+ */
+function relevanssi_add_include_matches( array &$matches, array $include, array $params ) {
 	if ( count( $include['posts'] ) < 1 && count( $include['items'] ) < 1 ) {
 		return;
 	}

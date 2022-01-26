@@ -53,12 +53,18 @@ class SC_Admin_Tools{
             return false;
         }
 
+        $asset_file = include( SC_PATH . 'admin/js/blocks/index.asset.php');
+
         wp_register_script(
-            'shortcoder', SC_ADMIN_URL . '/js/blocks/shortcoder.js', array( 'wp-blocks', 'wp-element' )
+            'shortcoder',
+            SC_ADMIN_URL . '/js/blocks/index.js',
+            $asset_file[ 'dependencies' ],
+            $asset_file[ 'version' ]
         );
 
         register_block_type( 'shortcoder/shortcoder', array(
-            'editor_script' => 'shortcoder',
+            'render_callback' => array( __CLASS__, 'render_block' ),
+            'editor_script' => 'shortcoder'
         ));
      
     }
@@ -76,9 +82,14 @@ class SC_Admin_Tools{
             'insert_page' => admin_url( 'admin-ajax.php?action=sc_insert_window' ),
             'popup_title' => __( 'Insert shortcode to editor', 'shortcoder' ),
             'popup_opened' => false,
-            'block_editor' => false
+            'block_editor' => false,
+            'block_inline_insert' => false
         ));
 
+    }
+
+    public static function render_block( $attributes, $content ){
+        return wpautop( $content );
     }
 
     public static function insert_window(){

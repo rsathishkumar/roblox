@@ -131,6 +131,22 @@ class SC_Admin{
 
     }
 
+    public static function is_edit_page( $new_edit = null ){
+
+        global $pagenow;
+
+        if (!is_admin()) return false;
+
+        if( $new_edit == 'edit' ){
+            return in_array( $pagenow, array( 'post.php' ) );
+        }elseif( $new_edit == 'new' ){
+            return in_array( $pagenow, array( 'post-new.php' ) );
+        }else{
+            return in_array( $pagenow, array( 'post.php', 'post-new.php' ) );
+        }
+
+    }
+
     public static function inline_js_variables(){
 
         return array(
@@ -146,7 +162,7 @@ class SC_Admin{
 
         wp_enqueue_style( 'sc-icon-css', SC_ADMIN_URL . 'css/menu-icon.css', array(), SC_VERSION );
 
-        if( !self::is_sc_admin_page() ){
+        if( !self::is_sc_admin_page() || $hook == 'shortcoder_page_settings' ){
             return false;
         }
 
@@ -257,6 +273,12 @@ class SC_Admin{
         }
 
         return $_GET;
+    }
+
+    public static function clean_post(){
+        
+        return stripslashes_deep( $_POST );
+        
     }
 
 }

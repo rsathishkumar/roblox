@@ -12,7 +12,22 @@
 
 <div class="sc_menu">
     <input type="search" class="sc_search" placeholder="Search ..." />
-    <a href="https://www.aakashweb.com/wordpress-plugins/ultimate-floating-widgets-pro/" target="_blank" class="ufw"><i>Check out</i> : Ultimate floating widgets<span>A WordPress plugin to create floating widgets.</span></a>
+    <div class="top_btns">
+        <a href="<?php echo admin_url( 'post-new.php?post_type=shortcoder' ); ?>" target="_blank" class="button">Create shortcode</a>
+        <span class="promo_link">
+<?php
+    $promo_links = array(
+        array('super-rss-reader/?utm_source=wp-socializer&utm_medium=insert&utm_campaign=srr-pro', 'Super RSS Reader', 'super-rss-reader.png'),
+        array('ultimate-floating-widgets/?utm_source=wp-socializer&utm_medium=insert&utm_campaign=ufw-pro', 'Ultimate Floating Widgets', 'ultimate-floating-widgets.png'),
+        array('announcer/?utm_source=wp-socializer&utm_medium=sidebar&utm_campaign=announcer-pro', 'Announcer', 'announcer.png'),
+    );
+    $promo_link_id = array_rand( $promo_links, 1 );
+    $promo_link = $promo_links[$promo_link_id ];
+?>
+            <a class="button" href="https://www.aakashweb.com/wordpress-plugins/<?php echo $promo_link[0]; ?>" target="_blank"><i>Check out: </i> <?php echo $promo_link[1]; ?></a>
+            <span><img src="<?php echo SC_ADMIN_URL . '/images/' . $promo_link[2]; ?>" /></span>
+        </span>
+    </div>
 </div>
 
 <div class="sc_list">
@@ -57,7 +72,7 @@ if( empty( $shortcodes ) ){
                 echo '<h3>' . $settings[ '_sc_title' ] . '</h3>';
                 echo '<div class="sc_tools">';
                     if( current_user_can( 'edit_post', $id ) ){
-                        echo '<a href="' . admin_url( 'post.php?action=edit&post=' . $id ) . '" class="button" target="_blank">' . __( 'Edit', 'shortcoder' ) . '</a>';
+                        echo '<a href="' . admin_url( 'post.php?action=edit&post=' . $id ) . '" class="button" target="_blank">' . __( 'View', 'shortcoder' ) . '</a>';
                     }
                     echo '<button class="button sc_copy">' . __( 'Copy', 'shortcoder' ) . '</button>';
                     echo '<button class="button sc_insert">' . __( 'Insert', 'shortcoder' ) . '</button>';
@@ -103,22 +118,40 @@ if( empty( $shortcodes ) ){
 ?>
 </div>
 
-<div class="cfe_box">
-<?php
-echo '<div class="cfe_text">';
-    echo '<img src="' . SC_ADMIN_URL . '/images/coffee.svg" />';
-    echo '<div><h2>Buy me a Coffee !</h2><p>If you like this plugin, buy me a coffee !</p></div>';
-echo '</div>';
-echo '<div class="cfe_form">';
-    echo '<select class="cfe_amt">';
-    for($i = 5; $i <= 15; $i++){
-        echo '<option value="' . $i . '" ' . ($i == 6 ? 'selected="selected"' : '') . '>$' . $i . '</option>';
-    }
-    echo '<option value="">Custom</option>';
-    echo '</select>';
-    echo '<a class="button button-primary cfe_btn" href="https://www.paypal.me/vaakash/6" data-link="https://www.paypal.me/vaakash/" target="_blank">Buy me coffee !</a>';
-echo '</div>';
-?>
+<div class="note">
+<p><strong>Note:</strong> When shortcodes are inserted in a post, please ensure all the shortcodes are closed. Click for more details.</p>
+    <table>
+        <tr>
+<td>
+<pre>
+Paragraph 1
+[sc name="my-shortcode-1"]
+
+Paragraph 2
+[sc name="my-shortcode-2"]
+
+Paragraph 3
+[sc name="my-shortcode-3"][/sc]
+</pre>
+<p>❌ Here, everything between <code>my-shortcode-1</code> and <code>my-shortcode-3</code> won't be displayed because <code>my-shortcode-3</code> has a closing shortcode.</p>
+<p>So all the contents between <code>[sc name="my-shortcode-1"] ... [/sc]</code> are taken inside <code>my-shortcode-1</code>.</p>
+</td>
+
+<td>
+<pre>
+Paragraph 1
+[sc name="my-shortcode-1"][/sc]
+
+Paragraph 2
+[sc name="my-shortcode-2"][/sc]
+
+Paragraph 3
+[sc name="my-shortcode-3"][/sc]
+</pre>
+<p>✅ Close all the Shortcoder's shortcodes in a post with <code>[/sc]</code>. <a href="https://codex.wordpress.org/Shortcode_API#Unclosed_Shortcodes" target="_blank">Learn more</a></p>
+</td>
+        </tr>
+    </table>
 </div>
 
 <div class="footer_thanks">Thanks for using <a href="https://www.aakashweb.com/wordpress-plugins/shortcoder/" target="_blank">Shortcoder</a> &bull; Please <a href="https://wordpress.org/support/plugin/shortcoder/reviews/?rate=5#new-post" target="_blank">rate 5 stars</a> and spread the word.</div>
