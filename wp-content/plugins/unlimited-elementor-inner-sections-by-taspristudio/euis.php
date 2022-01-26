@@ -9,14 +9,14 @@
  * that starts the plugin.
  *
  * @link              https://taspristudio.com
- * @since             1.0.0
+ * @since             1.1.1
  * @package           Euis
  *
  * @wordpress-plugin
  * Plugin Name:       Unlimited Elementor Inner Sections By TaspriStudio
  * Plugin URI:        https://taspristudio.com/product/unlimited-elementor-inner-sections
  * Description:       The only plugin that allows to add unlimited inner sections in Elementor without any other bloat-add-ons
- * Version:           1.0.0
+ * Version:           1.1.1
  * Author:            TaspriStudio
  * Author URI:        https://taspristudio.com
  * License:           GPL-2.0+

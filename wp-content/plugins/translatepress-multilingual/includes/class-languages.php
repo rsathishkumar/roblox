@@ -93,6 +93,7 @@ class TRP_Languages{
 			'zh_HK' => 'zh-TW',
 			'zh_TW'	=> 'zh-TW',
 			'zh_CN'	=> 'zh-CN',
+			'nb_NO'	=> 'no'
 		) );
 		foreach ( $language_codes as $language_code ) {
 			if ( $map_google_codes && isset( $map_wp_codes_to_google[$language_code] ) ){
@@ -195,9 +196,10 @@ class TRP_Languages{
      * @param string $english_or_native     'english_name' | 'native_name'
      * @return string                       Short language name.
      */
-	public function beautify_language_name( $name, $code, $english_or_native = 'english_name', $language_codes ){
+	public function beautify_language_name( $name, $code, $english_or_native, $language_codes ){
+	    $wp_lang = $this->get_wp_languages();
 		if ( $english_or_native == 'english_name' ) {
-			if ( ! $this->duplicated_language( $code, $language_codes ) ){
+			if ( ! $this->duplicated_language( $code, $language_codes) && (!isset($wp_lang[$code]['is_custom_language']) || (isset($wp_lang[$code]['is_custom_language']) && $wp_lang[$code]['is_custom_language'] !== true))){
 				$name = $this->string_trim_after_character( $name, " (" );
 			}
 		}

@@ -42,7 +42,9 @@ add_filter( 'trp_allow_tp_to_run', 'trp_missing_mbstrings_library' );
  */
 add_filter( 'nav_menu_link_attributes', 'trp_remove_html_from_menu_title', 10, 3);
 function trp_remove_html_from_menu_title( $atts, $item, $args ){
-    $atts['title'] = wp_strip_all_tags($atts['title']);
+    if( isset( $atts['title'] ) )
+        $atts['title'] = wp_strip_all_tags($atts['title']);
+
     return $atts;
 }
 
@@ -56,9 +58,9 @@ function trp_remove_html_from_menu_title( $atts, $item, $args ){
  * @param string $more      Optional. What to append if $text needs to be trimmed. Default '&hellip;'.
  * @return string Trimmed text.
  */
-function trp_wp_trim_words( $text, $num_words = 55, $more = null, $original_text ) {
+function trp_wp_trim_words( $text, $num_words, $more, $original_text ) {
     if ( null === $more ) {
-        $more = __( '&hellip;' );
+        $more = __( '&hellip;' );//phpcs:ignore
     }
     // what we receive is the short text in the filter
     $text = $original_text;
@@ -71,7 +73,7 @@ function trp_wp_trim_words( $text, $num_words = 55, $more = null, $original_text
     $default_language= $settings["default-language"];
 
     $char_is_word = false;
-    foreach (array('ch', 'ja', 'tw') as $lang){
+    foreach (array('ja', 'tw', 'zh') as $lang){
         if (strpos($default_language, $lang) !== false){
             $char_is_word = true;
         }
@@ -178,6 +180,29 @@ function trp_woo_pdf_invoices_and_packing_slips_compatibility_dont_translate_pdf
     return $bool;
 }
 
+/**
+ * Compatibility with WooCommerce PDF Invoices (woocommerce-ultimate-pdf-invoices)
+ * https://www.welaunch.io/en/product/woocommerce-pdf-invoices/
+ *
+ * @since 1.4.3
+ *
+ */
+add_filter( 'woocommerce_pdf_invoices_content', 'trp_woo_ultimate_pdf_invoices_compatibility');
+add_filter( 'woocommerce_pdf_invoices_order_data', 'trp_woo_ultimate_pdf_invoices_data_compatibility');
+
+function trp_woo_ultimate_pdf_invoices_compatibility($title){
+    if ( class_exists( 'TRP_Translation_Manager' ) ) {
+        return 	TRP_Translation_Manager::strip_gettext_tags($title);
+    }
+}
+
+function trp_woo_ultimate_pdf_invoices_data_compatibility($data_array){
+    if ( class_exists( 'TRP_Translation_Manager' ) ) {
+        $data_array = array_map('TRP_Translation_Manager::strip_gettext_tags',$data_array );
+    }
+    return $data_array;
+}
+
 
 /**
  * Compatibility with WooCommerce order notes
@@ -216,7 +241,7 @@ function trp_woo_data_strip_trpst( $data ){
 add_filter( 'trp_skip_selectors_from_dynamic_translation', 'trp_woo_skip_dynamic_translation' );
 function trp_woo_skip_dynamic_translation( $skip_selectors ){
     if( class_exists( 'WooCommerce' ) ) {
-        $add_skip_selectors = array( '#select2-billing_country-results', '#select2-shipping_country-results' );
+        $add_skip_selectors = array( '#billing_country', '#shipping_country', '#billing_state', '#shipping_state', '#select2-billing_country-results',  '#select2-billing_state-results', '#select2-shipping_country-results', '#select2-shipping_state-results' );
         return array_merge( $skip_selectors, $add_skip_selectors );
     }
     return $skip_selectors;
@@ -393,7 +418,7 @@ function trp_nextgen_compatibility( $priority ){
  */
 add_filter( 'run_ngg_resource_manager', 'trp_nextgen_disable_nextgen_in_translation_editor');
 function trp_nextgen_disable_nextgen_in_translation_editor( $bool ){
-    if ( isset( $_REQUEST['trp-edit-translation'] ) && esc_attr( $_REQUEST['trp-edit-translation'] ) === 'true' ) {
+    if ( isset( $_REQUEST['trp-edit-translation'] ) && sanitize_text_field( $_REQUEST['trp-edit-translation'] ) === 'true' ) {
         return false;
     }
     return $bool;
@@ -456,7 +481,7 @@ if( class_exists( 'WooCommerce' ) ) {
 	function trp_woo_fix_product_remove_from_cart_notice($message, $cart_item){
 		$product = wc_get_product( $cart_item['product_id'] );
 		if ($product){
-			$message =  sprintf( _x( '&ldquo; %s &rdquo;', 'Item name in quotes', 'woocommerce' ), $product->get_name() );
+			$message =  sprintf( _x( '&ldquo; %s &rdquo;', 'Item name in quotes', 'woocommerce' ), $product->get_name() ); //phpcs:ignore
 		}
 		return $message;
 	}
@@ -789,6 +814,75 @@ if( function_exists('ct_is_show_builder') ) {
 
         return $output;
     }
+
+    /**
+     * Disable TRP when the Oxygen Builder is being loaded
+     */
+    add_filter( 'trp_stop_translating_page', 'trp_oxygen_disable_trp_in_builder');
+    function trp_oxygen_disable_trp_in_builder(){
+
+        if( defined( 'SHOW_CT_BUILDER' ) )
+            return true;
+
+    }
+
+    /**
+     * Hide Floating Language Switcher when the Oxygen is shown
+     */
+    add_filter( 'trp_floating_ls_html', 'trp_page_builder_compatibility_disable_language_switcher' );
+    function trp_page_builder_compatibility_disable_language_switcher( $html ){
+
+        if( isset( $_GET['ct_builder'] ) && $_GET['ct_builder'] == 'true' )
+            return '';
+
+        return $html;
+
+    }
+
+}
+
+if( function_exists( 'ct_is_show_builder' ) || defined( 'FL_BUILDER_VERSION' ) ){
+
+    /**
+     * Used to redirect Oxygen Builder front-end to the default language.
+     * Hooked before TRP_Language_Switcher::redirect_to_correct_language() so we don't redirect twice
+     */
+    add_action( 'template_redirect', 'trp_page_builder_compatibility_redirect_to_default_language', 10 );
+    function trp_page_builder_compatibility_redirect_to_default_language(){
+
+        if( !is_admin() && ( ( isset( $_GET['ct_builder'] ) && $_GET['ct_builder'] == 'true' ) || isset( $_GET['fl_builder'] ) ) ){
+
+            $trp           = TRP_Translate_Press::get_trp_instance();
+            $url_converter = $trp->get_component('url_converter');
+            $settings      = ( new TRP_Settings() )->get_settings();
+
+            $current_url  = $url_converter->cur_page_url();
+            $current_lang = $url_converter->get_lang_from_url_string( $current_url );
+
+            if( ( $current_lang == null && $settings['add-subdirectory-to-default-language'] == 'yes' ) || ( $current_lang != null && $current_lang != $settings['default-language'] ) ){
+                $link_to_redirect = $url_converter->get_url_for_language( $settings['default-language'], null, '' );
+
+                if( $link_to_redirect != $current_url ){
+                    wp_redirect( $link_to_redirect, 301 );
+                    exit;
+                }
+
+            }
+
+        }
+
+    }
+
+    /**
+     * Disable automatic language redirect when the Oxygen or Beaver Builders are showing
+     */
+    add_filter( 'trp_ald_enqueue_redirecting_script', 'trp_ald_dont_redirect_inside_page_builders');
+    function trp_ald_dont_redirect_inside_page_builders( $enqueue_redirecting_script ){
+        if( ( isset( $_GET['ct_builder'] ) && $_GET['ct_builder'] == 'true' ) || isset( $_GET['fl_builder'] ) ){
+            return false;
+        }
+        return $enqueue_redirecting_script;
+    }
 }
 
 /**
@@ -801,6 +895,61 @@ function trp_brizy_disable_dynamic_translation( $enable ){
     }
     return $enable;
 }
+
+/**
+ * Compatibility with Brizy PRO menu, the language switcher inside the menu does not work fully yet
+ * Compatibility with Brizy assets loading with language slug in url (the 'process' function)
+ */
+if( defined( 'BRIZY_PRO_VERSION' ) || defined( 'BRIZY_VERSION' ) ){
+    add_filter( 'trp_home_url', 'trp_brizy_menu_pro_compatibility', 10, 5 );
+    function trp_brizy_menu_pro_compatibility( $new_url, $abs_home, $TRP_LANGUAGE, $path, $url ){
+        if ( version_compare( PHP_VERSION, '5.4.0', '>=' ) ) {
+            $callstack_functions = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 15);//set a limit if it is supported to improve performance
+        }
+        else{
+            $callstack_functions = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
+        }
+
+        $list_of_functions = array( 'restoreSiteUrl', 'process' );
+        if( !empty( $callstack_functions ) ) {
+            foreach ( $callstack_functions as $callstack_function ) {
+                if ( in_array( $callstack_function['function'], $list_of_functions ) ) {
+                    return $url;
+                }
+            }
+        }
+
+        return $new_url;
+    }
+}
+
+
+/**
+ * Compatibility with woocommerce-pdf-vouchers plugin, removed language from download link of the vouchers
+ */
+if( defined( 'WOO_VOU_PLUGIN_VERSION' ) ){
+    add_filter( 'trp_home_url', 'trp_woocommerce_pdf_vouchers_download_file_compatibility', 10, 5 );
+    function trp_woocommerce_pdf_vouchers_download_file_compatibility( $new_url, $abs_home, $TRP_LANGUAGE, $path, $url ){
+        if ( version_compare( PHP_VERSION, '5.4.0', '>=' ) ) {
+            $callstack_functions = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 15);//set a limit if it is supported to improve performance
+        }
+        else{
+            $callstack_functions = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
+        }
+
+        $list_of_functions = array( 'get_item_download_url' );
+        if( !empty( $callstack_functions ) ) {
+            foreach ( $callstack_functions as $callstack_function ) {
+                if ( in_array( $callstack_function['function'], $list_of_functions ) ) {
+                    return $url;
+                }
+            }
+        }
+
+        return $new_url;
+    }
+}
+
 
 /**
  * Compatibility with Advanced WooCommerce Search 1/2
@@ -888,7 +1037,7 @@ function trp_rtcl_autocomplete_search_results( $args, $request ){
 add_action( 'wp_body_open', 'trp_overrule_main_query_condition', 10, 2 );
 function trp_overrule_main_query_condition(){
     if ( class_exists('Rtcl') ) {
-        add_filter( 'trp_wrap_with_post_id_overrule', __return_false() );
+        add_filter( 'trp_wrap_with_post_id_overrule', '__return_false' );
     }
 }
 
@@ -933,6 +1082,21 @@ add_filter( 'trp_skip_selectors_from_dynamic_translation', 'trp_add_to_any_skip_
 function trp_add_to_any_skip_dynamic_translation( $skip_selectors ){
     if( function_exists( 'A2A_SHARE_SAVE_init' ) ) {
         $add_skip_selectors = array( '.addtoany_list' );
+        return array_merge( $skip_selectors, $add_skip_selectors );
+    }
+    return $skip_selectors;
+}
+
+/*
+ * Compatibility with Uncode theme menu on mobile
+ *
+ * Skip detection by translate-dom-changes of the url change when hitting the menu
+ *
+ */
+add_filter( 'trp_skip_selectors_from_dynamic_translation', 'trp_uncode_skip_dynamic_translation' );
+function trp_uncode_skip_dynamic_translation( $skip_selectors ){
+    if( function_exists( 'uncode_setup' ) ) {
+        $add_skip_selectors = array( '.menu-horizontal .menu-smart' );
         return array_merge( $skip_selectors, $add_skip_selectors );
     }
     return $skip_selectors;
@@ -1007,7 +1171,7 @@ function trp_elementor_blockquote_translate_tweet_button( $array ){
 
                     //add author if it was eliminated
                     if(!empty($quote_author) )
-                        $array['text'] = $array['text'] . ' — ' . $quote_author;
+                        $array['text'] = $array['text'] . ' — ' .  $translation_render->translate_page($quote_author);
 
                     break;
                 }
@@ -1016,6 +1180,32 @@ function trp_elementor_blockquote_translate_tweet_button( $array ){
 
     }
     return $array;
+}
+
+/**
+ * Add compatibility with blockquote tweet button in elementor pro that had the link broken, it doubled the language in the url
+ */
+if( function_exists('elementor_pro_load_plugin') ) {
+    add_filter('trp_home_url', 'trp_elementor_blockquote_tweet_button_url', 10, 5);
+    function trp_elementor_blockquote_tweet_button_url($new_url, $abs_home, $TRP_LANGUAGE, $path, $url)
+    {
+        if (version_compare(PHP_VERSION, '5.4.0', '>=')) {
+            $callstack_functions = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 15);//set a limit if it is supported to improve performance
+        } else {
+            $callstack_functions = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
+        }
+
+        $list_of_functions = array('render');
+        if (!empty($callstack_functions)) {
+            foreach ($callstack_functions as $callstack_function) {
+                if (in_array($callstack_function['function'], $list_of_functions) && isset($callstack_function['class']) && $callstack_function['class'] === 'ElementorPro\Modules\Blockquote\Widgets\Blockquote') {
+                    return $url;
+                }
+            }
+        }
+
+        return $new_url;
+    }
 }
 
 /**
@@ -1032,3 +1222,406 @@ if( defined('ELEMENTOR_VERSION') ) {
         return $post;
     }
 }
+
+/**
+ * Add current-menu-item css class to menu items in WP Nav Menu
+ *
+ * Don't add them to language switcher items.
+ * Always adds them to secondary languages.
+ * Add them to default language if Use subdirectory is set to Yes
+ */
+add_filter('wp_nav_menu_objects', 'trp_add_current_menu_item_css_class');
+function trp_add_current_menu_item_css_class( $items ){
+    global $TRP_LANGUAGE;
+    $trp = TRP_Translate_Press::get_trp_instance();
+    $url_converter = $trp->get_component('url_converter');
+    $trp_settings = $trp->get_component( 'settings' );
+    $settings = $trp_settings->get_settings();
+
+    foreach( $items as $item ){
+        if ( !( $TRP_LANGUAGE === $settings['default-language'] && isset( $settings['add-subdirectory-to-default-language']) && $settings['add-subdirectory-to-default-language'] !== 'yes'  ) &&
+            !in_array( 'current-menu-item', $item->classes ) && !in_array( 'menu-item-object-language_switcher', $item->classes ) && ( !empty($item->url) && $item->url !== '#')
+        ){
+            $url_for_language = $url_converter->get_url_for_language( $TRP_LANGUAGE, $item->url );
+            $url_for_language = strpos( $url_for_language, '#' ) ? substr( $url_for_language, 0, strpos( $url_for_language, '#' ) ) : $url_for_language;
+            $cur_page_url = set_url_scheme( untrailingslashit( $url_converter->cur_page_url() ) );
+
+            if ( untrailingslashit( $url_for_language ) == untrailingslashit( $cur_page_url ) ){
+                $item->classes[] = 'current-menu-item';
+            }
+        }
+        if(!in_array('current-language-menu-item', $item->classes) && in_array('menu-item-object-language_switcher', $item->classes)){
+            $current_language = $url_converter->get_lang_from_url_string($item->url);
+
+            if($current_language == null){
+                $current_language = $settings['default-language'];
+            }
+
+            if($current_language == $TRP_LANGUAGE){
+                $item->classes[] = 'current-language-menu-item';
+            }
+        }
+    }
+    return $items;
+}
+
+
+/**
+ * Compatibility with xstore theme ajax search on other languages than english and when automatic translation was on
+ * a class from the search form got translated
+ */
+if( function_exists('initial_ETC') ) {
+    add_filter('trp_skip_gettext_processing', 'trp_exclude_xstore_search_class', 999, 4);
+    function trp_exclude_xstore_search_class($return, $translation, $text, $domain){
+
+        if (version_compare(PHP_VERSION, '5.4.0', '>=')) {
+            $callstack_functions = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 15);//set a limit if it is supported to improve performance
+        } else {
+            $callstack_functions = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
+        }
+
+        $list_of_functions = array();
+        if (!empty($callstack_functions)) {
+            foreach ($callstack_functions as $callstack_function) {
+                $list_of_functions[] = $callstack_function['function'];
+            }
+        }
+
+        if (in_array('esc_attr_e', $list_of_functions) && in_array('header_content_callback', $list_of_functions))
+            return true;
+
+        return $return;
+    }
+}
+
+/**
+ * Add compatibility with Business Directory Plugin that requires to update permalinks when we are on other languages or else it will throw a 404 error
+ */
+if( defined( 'WPBDP_PLUGIN_FILE' ) ) {
+    add_filter('trp_prevent_permalink_update_on_other_languages', 'trp_prevent_permalink_update_on_other_languages');
+    function trp_prevent_permalink_update_on_other_languages($bool){
+        return false;
+    }
+}
+
+
+/**
+ * Exclude some problematic gettext strings from being translated
+ */
+add_filter('trp_skip_gettext_processing', 'trp_exclude_problematic_gettext_strings', 999, 4 );
+function trp_exclude_problematic_gettext_strings ( $return, $translation, $text, $domain ){
+    $exclude_strings = array(
+        // some examples on how to use: (domain is optional)
+        //array( 'string' => 'Some Text', 'domain' => 'some-domain' )
+        //array( 'string' => 'Some Other Text' )
+        array( 'string' => 'Ștefan Vodă' )//this is translated by Google Translate into german as "Fan Vod" and the quotes create problems
+    );
+
+    foreach( $exclude_strings as $string_details ){
+        if( $text === $string_details['string'] ){
+            if( empty( $string_details['domain'] ) )
+                return true;
+            else if( $domain === $string_details['domain'] )
+                return true;
+        }
+    }
+
+    return $return;
+}
+
+
+/**
+ * Compatibility with WooCommerce API
+ *
+ * Particularly with Paypal and myPOS checkout
+ *
+ * When the IPN request comes do not translate anything outputted.
+ * MyPOS expects "OK" string which does not have to be translated as regular string.
+ * Paypal had trpst in the details sent.
+ */
+add_action( 'woocommerce_api_request', 'trp_woo_wc_api_handle_api_request', 1 );
+function trp_woo_wc_api_handle_api_request( ){
+    add_filter( 'trp_skip_gettext_processing', '__return_true' );
+    add_filter( 'trp_stop_translating_page', '__return_true' );
+}
+
+/**
+ * Compatibility with WooCommerce Min/Max Quantities that wrongly add data-quantity attribute two times on the link and our parser breaks this. The update of the parser to 1.9.1 should render this redundant
+ */
+if( class_exists('WC_Min_Max_Quantities') ) {
+    add_filter('woocommerce_loop_add_to_cart_link', 'trp_check_duplicate_quantity_attribute_on_link', 99, 2);
+    function trp_check_duplicate_quantity_attribute_on_link($html, $product){
+        $occurrences = substr_count($html, " data-quantity=");
+        if ($occurrences > 1) {
+            $html = preg_replace('/(data-quantity="\d+"(?!.*data-quantity="\d+"))/', '', $html, 1);
+        }
+
+        return $html;
+    }
+}
+
+/**
+ * Add here compatibility with search plugins
+ */
+add_filter('trp_force_search', 'trp_force_search' );
+function trp_force_search( $bool ){
+    //force search in xstore theme ajax search
+    if( isset( $_REQUEST['action'] ) && $_REQUEST['action'] === 'etheme_ajax_search' )
+        $bool = true;
+
+    //compatibility with WooCommerce Product Search plugin
+    if( class_exists('WooCommerce_Product_Search_Service') ) {
+        if (isset($_REQUEST['action']) && $_REQUEST['action'] === 'product_search')
+            $bool = true;
+    }
+
+    return $bool;
+}
+
+/**
+ * Compatibility with WooCommerce Product Search plugin
+ * The only way I found is to hijack the cache in the get_post_ids_for_request() function from WooCommerce_Product_Search_Service class. It comes with a loss of performance
+ */
+if( class_exists('WooCommerce_Product_Search_Service') ) {
+
+    add_filter('woocommerce_product_search_request_search_query', 'trp_woocommerce_product_search_compatibility');
+
+    function trp_woocommerce_product_search_compatibility($search_query)
+    {
+        global $TRP_LANGUAGE;
+        $trp = TRP_Translate_Press::get_trp_instance();
+        $trp_settings = $trp->get_component('settings');
+        $settings = $trp_settings->get_settings();
+
+        if ($TRP_LANGUAGE !== $settings['default-language']) {
+            $title = isset($_REQUEST[WooCommerce_Product_Search_Service::TITLE]) ? intval($_REQUEST[WooCommerce_Product_Search_Service::TITLE]) > 0 : WooCommerce_Product_Search_Service::DEFAULT_TITLE;
+            $excerpt = isset($_REQUEST[WooCommerce_Product_Search_Service::EXCERPT]) ? intval($_REQUEST[WooCommerce_Product_Search_Service::EXCERPT]) > 0 : WooCommerce_Product_Search_Service::DEFAULT_EXCERPT;
+            $content = isset($_REQUEST[WooCommerce_Product_Search_Service::CONTENT]) ? intval($_REQUEST[WooCommerce_Product_Search_Service::CONTENT]) > 0 : WooCommerce_Product_Search_Service::DEFAULT_CONTENT;
+            $tags = isset($_REQUEST[WooCommerce_Product_Search_Service::TAGS]) ? intval($_REQUEST[WooCommerce_Product_Search_Service::TAGS]) > 0 : WooCommerce_Product_Search_Service::DEFAULT_TAGS;
+            $sku = isset($_REQUEST[WooCommerce_Product_Search_Service::SKU]) ? intval($_REQUEST[WooCommerce_Product_Search_Service::SKU]) > 0 : WooCommerce_Product_Search_Service::DEFAULT_SKU;
+            $categories = isset($_REQUEST[WooCommerce_Product_Search_Service::CATEGORIES]) ? intval($_REQUEST[WooCommerce_Product_Search_Service::CATEGORIES]) > 0 : WooCommerce_Product_Search_Service::DEFAULT_CATEGORIES;
+            $attributes = isset($_REQUEST[WooCommerce_Product_Search_Service::ATTRIBUTES]) ? intval($_REQUEST[WooCommerce_Product_Search_Service::ATTRIBUTES]) > 0 : WooCommerce_Product_Search_Service::DEFAULT_ATTRIBUTES;
+            $variations = isset($_REQUEST[WooCommerce_Product_Search_Service::VARIATIONS]) ? intval($_REQUEST[WooCommerce_Product_Search_Service::VARIATIONS]) > 0 : WooCommerce_Product_Search_Service::DEFAULT_VARIATIONS;
+
+            $min_price = isset($_REQUEST[WooCommerce_Product_Search_Service::MIN_PRICE]) ? WooCommerce_Product_Search_Service::to_float($_REQUEST[WooCommerce_Product_Search_Service::MIN_PRICE]) : null;//phpcs:ignore
+            $max_price = isset($_REQUEST[WooCommerce_Product_Search_Service::MAX_PRICE]) ? WooCommerce_Product_Search_Service::to_float($_REQUEST[WooCommerce_Product_Search_Service::MAX_PRICE]) : null;//phpcs:ignore
+            if ($min_price !== null && $min_price <= 0) {
+                $min_price = null;
+            }
+            if ($max_price !== null && $max_price <= 0) {
+                $max_price = null;
+            }
+            if ($min_price !== null && $max_price !== null && $max_price < $min_price) {
+                $max_price = null;
+            }
+
+            $on_sale = isset($_REQUEST[WooCommerce_Product_Search_Service::ON_SALE]) ? intval($_REQUEST[WooCommerce_Product_Search_Service::ON_SALE]) > 0 : WooCommerce_Product_Search_Service::DEFAULT_ON_SALE;
+
+            //this is how they get the key in the method get_cache_key()
+            $cache_key = md5(implode('-', array(
+                'title' => $title,
+                'excerpt' => $excerpt,
+                'content' => $content,
+                'tags' => $tags,
+                'sku' => $sku,
+                'categories' => $categories,
+                'attributes' => $attributes,
+                'variations' => $variations,
+
+                'search_query' => $search_query,
+                'min_price' => $min_price,
+                'max_price' => $max_price,
+                'on_sale' => $on_sale
+            )));
+
+            $trp_search = $trp->get_component('search');
+            $include = $trp_search->get_post_ids_containing_search_term($search_query, null);
+            wp_cache_set($cache_key, $include, WooCommerce_Product_Search_Service::POST_CACHE_GROUP, WooCommerce_Product_Search_Service::CACHE_LIFETIME);
+        }
+
+        return $search_query;
+    }
+}
+
+
+
+/**
+ * Strip tags manually from a problematic string coming from the My Listing theme
+ */
+ add_action('init', 'trp_mylisting_hook_exclude_string' );
+ function trp_mylisting_hook_exclude_string(){
+     if( class_exists( 'MyListing\\App' ) ){
+         add_filter('gettext_with_context', 'trp_mylisting_exclude_string', 101, 4 );
+     }
+ }
+
+ function trp_mylisting_exclude_string( $translation, $text, $context, $domain ){
+
+     if( $domain == 'my-listing' && $text == 'my-listings' )
+         $translation = TRP_Translation_Manager::strip_gettext_tags( $translation );
+
+     return $translation;
+
+ }
+
+
+/**
+ * Compatibility with Google Site Kit plugin
+ *
+ * Problem was that Site Kit dashboard kept disconnecting, thinking the url must have changed.
+ *
+ * To replicate, set TP option "Add language to subdirectory" Yes and use Complianz plugin, wizard step 2,
+ * to perform re-scan of cookies. This triggered the disconnect.
+ */
+add_filter('googlesitekit_canonical_home_url', 'trp_googlesitekit_compatibility_home_url' );
+function trp_googlesitekit_compatibility_home_url( $url ) {
+    $trp = TRP_Translate_Press::get_trp_instance();
+    $url_converter = $trp->get_component('url_converter');
+    return $url_converter->get_abs_home();
+}
+
+
+/**
+ * Compatibility with WPEngine hosting
+ *
+ * Detect and handle query length limiting feature of WPEngine. Without this check, the query returns no results as if
+ * there were no translations found. This results in duplicate row inserting and unnecessary automatic translation
+ * usage.
+ */
+add_filter('trp_get_existing_translations', 'trp_wpengine_query_limit_check', 10, 3 );
+function trp_wpengine_query_limit_check($dictionary, $prepared_query, $strings_array){
+    if ( function_exists('is_wpe') && ( !defined ('WPE_GOVERNOR') || ( defined ('WPE_GOVERNOR') && WPE_GOVERNOR != false ) ) && strlen($prepared_query) >= 16000 ){
+        $trp = TRP_Translate_Press::get_trp_instance();
+        $trp_query = $trp->get_component( 'query' );
+        $trp_query->maybe_record_automatic_translation_error(array( 'details' => esc_html__("Detected long query limitation on WPEngine hosting. Some large pages may appear untranslated. You can remove limitation by adding the following to your site’s wp-config.php: define( 'WPE_GOVERNOR', false ); ", 'translatepress-multilingual')), true );
+        return false;
+    }else{
+        return $dictionary;
+    }
+}
+
+
+/**
+ * Compatibility with Dokan plugin
+ *
+ * Dates are run through gettext and the this breaks further functions because of wrappings
+ */
+if ( class_exists('WeDevs_Dokan')) {
+    add_filter( 'trp_skip_gettext_processing', 'trp_exclude_dokan_date_strings', 20, 4 );
+}
+function trp_exclude_dokan_date_strings($return, $translation, $text, $domain) {
+    $skip_text = array('Y/m/d g:i:s A', 'Y/m/d');
+    if ($domain == 'dokan' && in_array( $text, $skip_text) ){
+        return true;
+    }
+    return $return;
+}
+
+function trp_add_language_to_pms_wppb_restriction_redirect_url( $redirect_url ){
+
+    global $TRP_LANGUAGE;
+
+    $trp = TRP_Translate_Press::get_trp_instance();
+    $url_converter = $trp->get_component('url_converter');
+
+    return $url_converter->get_url_for_language( $TRP_LANGUAGE, $redirect_url, '' );
+
+}
+
+if( defined( 'PMS_VERSION' ) )
+    add_filter( 'pms_restricted_post_redirect_url', 'trp_add_language_to_pms_wppb_restriction_redirect_url' );
+
+if( function_exists( 'wppb_plugin_init' ) )
+    add_filter( 'wppb_restricted_post_redirect_url', 'trp_add_language_to_pms_wppb_restriction_redirect_url' );
+
+/**
+ * Compatibility with wp-Typography
+ * The $filters array is set to empty, so it does not affect the strings anymore in the function trp_remove_filters_wp_typography.
+ * Then it is reset with a higher priority by calling the function process() inside the trp_add_filters_wp_typography function.
+ */
+
+if(class_exists('WP_Typography')) {
+    add_action('plugins_loaded', 'trp_wp_typography');
+}
+
+function trp_wp_typography(){
+    global $TRP_LANGUAGE;
+    $trp = TRP_Translate_Press::get_trp_instance();
+    $trp_settings = $trp->get_component('settings');
+    $settings = $trp_settings->get_settings();
+
+    if ($TRP_LANGUAGE !== $settings['default-language']) {
+        add_filter( 'typo_content_filters', 'trp_remove_filters_wp_typography' );
+        add_filter( 'trp_translated_html', 'trp_add_filters_wp_typography', 100000, 1 );
+        add_filter('run_wptexturize', '__return_null', 11);
+    }
+}
+
+function trp_remove_filters_wp_typography($filters){
+    $filters = [];
+
+    return $filters;
+}
+
+
+
+function trp_add_filters_wp_typography($final_html){
+    $wpt= WP_Typography::get_instance();
+
+    add_filter('run_wptexturize', '__return_false', 11);
+
+    $final_html = $wpt->process($final_html, $is_title = false, $force_feed = false, null );
+
+    return $final_html;
+
+}
+
+
+/*
+ * Compatibility with All In One SEO Pack
+ */
+
+if(function_exists('aioseo')){
+
+    if (version_compare(PHP_VERSION, '5.4.0', '>=')) {
+        $callstack_functions = debug_backtrace(DEBUG_BACKTRACE_PROVIDE_OBJECT, 15);//set a limit if it is supported to improve performance
+    } else {
+        $callstack_functions = debug_backtrace(DEBUG_BACKTRACE_PROVIDE_OBJECT);
+    }
+
+    if (!empty($callstack_functions)) {
+        foreach ( $callstack_functions as $callstack_function ) {
+            if ( isset($callstack_function["object"]->{"callbacks"}) ) {
+                foreach ($callstack_function["object"]->{"callbacks"}[10] as $key=>$value){
+                    if(strpos($key, 'actionScheduler')){
+                        if(array_key_exists('breadcrumbs_archiveFormat',  $callstack_function["object"]->{"callbacks"}[10][ $key ]["function"][0]->{"options"}->{"localized"}  )) {
+                            add_action( 'trp_before_running_hooks', 'trp_AIOSEO_remove_gettext_hooks', 10, 1 );
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+function trp_AIOSEO_remove_gettext_hooks($trp_loader){
+    $trp                = TRP_Translate_Press::get_trp_instance();
+    $translation_render = $trp->get_component( 'translation_render' );
+    $trp_loader->remove_hook( 'the_title', 'wrap_with_post_id', $translation_render );
+}
+
+
+/**
+ * Compatibility with Elementor/Divi/WPBakery when "Use a subdirectory for the default language" is set to Yes
+ * Making sure the page edited with Elementor/Divi/WPBakery appears in the default language instead of the first language from the Language list
+ */
+add_filter( 'trp_needed_language', 'trp_page_builders_compatibility_with_subdirectory_for_default_language', 10, 4 );
+function trp_page_builders_compatibility_with_subdirectory_for_default_language( $needed_language, $lang_from_url, $settings, $trp) {
+    if ( ( ( isset( $_GET['action'] ) && $_GET['action'] === 'elementor' ) || isset( $_GET['elementor-preview'] ) ) //Elementor
+        || ( ( isset( $_GET['et_fb'] ) && $_GET['et_fb'] === '1' ) && ( isset( $_GET['PageSpeed'] ) && $_GET['PageSpeed'] === "off" ) ) //Divi
+        || ( ( isset( $_GET['vc_action'] ) && $_GET['vc_action'] === 'vc_inline' ) || ( isset( $_GET['vc_editable'] ) && $_GET['vc_editable'] === 'true' ) ) ) { //WPBakery
+        $needed_language = $settings['default-language'];
+    }
+    return $needed_language;
+}
+

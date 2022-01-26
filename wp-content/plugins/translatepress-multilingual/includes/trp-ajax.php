@@ -22,12 +22,16 @@ class TRP_Ajax{
         }
 
         include './external-functions.php';
+        if ( !trp_is_valid_language_code( $_POST['language'] ) || !trp_is_valid_language_code( $_POST['original_language'] ) ) {//phpcs:ignore
+            echo json_encode( 'TranslatePress Error: Invalid language code' );
+            exit;
+        }
 
         if ( $this->connect_to_db() ){
 
             $this->output_translations(
-            	$this->sanitize_strings( $_POST['originals'] ),
-            	$this->sanitize_strings( $_POST['skip_machine_translation'] ),
+            	$this->sanitize_strings( $_POST['originals'] ),//phpcs:ignore
+            	$this->sanitize_strings( $_POST['skip_machine_translation'] ),//phpcs:ignore
 	            mysqli_real_escape_string( $this->connection, filter_var( $_POST['language'], FILTER_SANITIZE_STRING ) ),
 	            mysqli_real_escape_string( $this->connection, filter_var( $_POST['original_language'], FILTER_SANITIZE_STRING ) )
             );
@@ -48,7 +52,7 @@ class TRP_Ajax{
      * @return array                    Sanitized array of strings.
      */
     protected function sanitize_strings( $posted_strings){
-    	$numerals_option = isset( $_POST['translate_numerals_opt'] ) ? $_POST['translate_numerals_opt'] : 'no';
+    	$numerals_option = isset( $_POST['translate_numerals_opt'] ) ? filter_var( $_POST['translate_numerals_opt'], FILTER_SANITIZE_STRING ) : 'no';
         $strings = json_decode( $posted_strings );
         if ( is_array( $strings ) ) {
             foreach ($strings as $key => $string) {

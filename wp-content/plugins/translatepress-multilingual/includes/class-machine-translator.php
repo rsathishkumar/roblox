@@ -12,6 +12,7 @@ class TRP_Machine_Translator {
 	protected $machine_translator_logger;
 	protected $machine_translation_codes;
 	protected $trp_languages;
+    protected $correct_api_key = null;
     /**
      * TRP_Machine_Translator constructor.
      *
@@ -33,14 +34,171 @@ class TRP_Machine_Translator {
     /**
      * Whether automatic translation is available.
      *
+     * @param array $languages
      * @return bool
      */
-    public function is_available(){
-        if( !empty( $this->settings['trp_machine_translation_settings']['machine-translation'] ) && $this->settings['trp_machine_translation_settings']['machine-translation'] == 'yes' )
-            return true;
-        else
+    public function is_available( $languages = array() ){
+        if( !empty( $this->settings['trp_machine_translation_settings']['machine-translation'] ) &&
+            $this->settings['trp_machine_translation_settings']['machine-translation'] == 'yes'
+        ) {
+            if ( empty( $languages ) ){
+                // can be used to simply know if machine translation is available
+                return true;
+            }
+
+            return $this->check_languages_availability($languages);
+
+        }else {
             return false;
+        }
     }
+
+    public function check_languages_availability( $languages, $force_recheck = false ){
+        if ( !method_exists( $this, 'get_supported_languages' ) || !method_exists( $this, 'get_engine_specific_language_codes' )){
+            return true;
+        }
+        $force_recheck = ( current_user_can('manage_options') &&
+            !empty( $_GET['trp_recheck_supported_languages']) && $_GET['trp_recheck_supported_languages'] === '1' &&
+            wp_verify_nonce( sanitize_text_field( $_GET['trp_recheck_supported_languages_nonce'] ), 'trp_recheck_supported_languages' ) ) ? true : $force_recheck; //phpcs:ignore
+        $data = get_option('trp_db_stored_data', array() );
+        if ( isset( $_GET['trp_recheck_supported_languages'] )) {
+            unset($_GET['trp_recheck_supported_languages'] );
+        }
+
+        // if supported languages are not stored, fetch them and update option
+        if ( empty( $data['trp_mt_supported_languages'][$this->settings['trp_machine_translation_settings']['translation-engine']]['last-checked'] ) || $force_recheck || ( method_exists($this,'check_formality') && !isset($data['trp_mt_supported_languages'][$this->settings['trp_machine_translation_settings']['translation-engine']]['formality-supported-languages']))){
+            if ( empty( $data['trp_mt_supported_languages'] ) ) {
+                $data['trp_mt_supported_languages'] = array();
+            }
+            if ( empty( $data['trp_mt_supported_languages'][ $this->settings['trp_machine_translation_settings']['translation-engine'] ] ) ) {
+                $data['trp_mt_supported_languages'][ $this->settings['trp_machine_translation_settings']['translation-engine'] ] = array( 'languages' => array() );
+            }
+
+            $data['trp_mt_supported_languages'][$this->settings['trp_machine_translation_settings']['translation-engine']]['languages'] = $this->get_supported_languages();
+            if (method_exists($this, 'check_formality')) {
+                $data['trp_mt_supported_languages'][ $this->settings['trp_machine_translation_settings']['translation-engine'] ]['formality-supported-languages'] = $this->check_formality();
+            }
+            $data['trp_mt_supported_languages'][$this->settings['trp_machine_translation_settings']['translation-engine']]['last-checked'] = date("Y-m-d H:i:s" );
+            update_option('trp_db_stored_data', $data );
+        }
+
+        $languages_iso_to_check = $this->get_engine_specific_language_codes( $languages );
+
+        $all_are_available = !array_diff($languages_iso_to_check, $data['trp_mt_supported_languages'][$this->settings['trp_machine_translation_settings']['translation-engine']]['languages']);
+
+        return apply_filters('trp_mt_available_supported_languages', $all_are_available, $languages, $this->settings );
+    }
+
+    public function get_last_checked_supported_languages(){
+        $data = get_option('trp_db_stored_data', array() );
+        if ( empty( $data['trp_mt_supported_languages'][$this->settings['trp_machine_translation_settings']['translation-engine']]['last-checked'] ) ){
+            $this->check_languages_availability( $this->settings['translation-languages'], true);
+        }
+        return $data['trp_mt_supported_languages'][$this->settings['trp_machine_translation_settings']['translation-engine']]['last-checked'];
+    }
+
+    /**
+     * Output an SVG based on translation engine and error flag.
+     *
+     * @param bool $show_errors true to show an error SVG, false if not.
+     */
+    public function automatic_translation_svg_output( $show_errors ) {
+        if ( method_exists( $this, 'automatic_translate_error_check' ) ) {
+            if ( $show_errors ) {
+                trp_output_svg( 'error' );
+            } else {
+                trp_output_svg( 'check' );
+            }
+        }
+        
+    }
+
+    /**
+     * Check the automatic translation API keys for Google Translate and DeepL.
+     *
+     * @param TRP_Translate_Press $machine_translator Machine translator instance.
+     * @param string $translation_engine              The translation engine (can be google_translate_v2 and deepl).
+     * @param string $api_key                         The API key to check.
+     *
+     * @return array [ (string) $message, (bool) $error ].
+     */
+    public function automatic_translate_error_check( $machine_translator, $translation_engine, $api_key ) {
+
+        //@TODO need to find a better solution as the code bellow does not work
+
+//        if ($this->correct_api_key!=null){
+//                return $this->correct_api_key;
+//        }
+
+        $is_error       = false;
+        $return_message = '';
+
+        switch ( $translation_engine ) {
+            case 'google_translate_v2':
+                if ( empty( $api_key ) ) {
+                    $is_error = true;
+                    $return_message = __( 'Please enter your Google Translate key.', 'translatepress-multilingual' );
+                } else {
+                    // Perform test.
+                    $response = $machine_translator->test_request();
+                    $code     = wp_remote_retrieve_response_code( $response );
+                    if ( 200 !== $code ) {
+                        $is_error        = true;
+                        $translate_response = trp_gt_response_codes( $code );
+                        $return_message     = $translate_response['message'];
+                    }
+                }
+                break;
+            case 'deepl':
+                if ( empty( $api_key ) ) {
+                    $is_error = true;
+                    $return_message = __( 'Please enter your DeepL API key.', 'translatepress-multilingual' );
+                } else {
+                    // Perform test.
+                    $is_error= false;
+                    $response = $machine_translator->test_request();
+                    $code     = wp_remote_retrieve_response_code( $response );
+                    if ( 200 !== $code && ( method_exists( 'TRP_DeepL', 'deepl_response_codes' ) || method_exists( 'TRP_IN_DeepL', 'deepl_response_codes' ) ) ) {
+
+						// Test whether the old deepL add-on or the new repackaging model is used
+						if ( method_exists( 'TRP_DeepL', 'deepl_response_codes' ) ) {
+							$translate_response = TRP_DeepL::deepl_response_codes( $code );
+						} else {
+							$translate_response = TRP_IN_DeepL::deepl_response_codes( $code );
+						}
+	                    $is_error       = true;
+                        $return_message = $translate_response['message'];
+                    }
+                }
+                break;
+            default:
+                break;
+        }
+
+
+        $this->correct_api_key=array(
+            'message' => $return_message,
+            'error'   => $is_error,
+        );
+
+        return $this->correct_api_key;
+    }
+
+    // checking if the api_key is correct in order to display unsupported languages
+
+    public function is_correct_api_key(){
+
+        $machine_translator = $this;
+        $translation_engine = $this->settings['trp_machine_translation_settings']['translation-engine'];
+        $api_key = $this->get_api_key();
+
+        $verification = $this->automatic_translate_error_check( $machine_translator, $translation_engine, $api_key );
+        if($verification['error']== false) {
+            return true;
+        }
+        return false;
+    }
+
 
 	/**
 	 * Return site referer
@@ -133,7 +291,7 @@ class TRP_Machine_Translator {
 
         $crawlers = apply_filters( 'trp_machine_translator_crawlers', 'rambler|abacho|acoi|accona|aspseek|altavista|estyle|scrubby|lycos|geona|ia_archiver|alexa|sogou|skype|facebook|twitter|pinterest|linkedin|naver|bing|google|yahoo|duckduckgo|yandex|baidu|teoma|xing|java\/1.7.0_45|bot|crawl|slurp|spider|mediapartners|\sask\s|\saol\s' );
 
-        return preg_match( '/'. $crawlers .'/i', $_SERVER['HTTP_USER_AGENT'] );
+        return preg_match( '/'. $crawlers .'/i', sanitize_text_field ( $_SERVER['HTTP_USER_AGENT'] ) );
     }
 
     private function get_placeholders( $count ){
@@ -156,7 +314,8 @@ class TRP_Machine_Translator {
         if ( !empty($strings) && is_array($strings) && method_exists( $this, 'translate_array' ) && apply_filters( 'trp_disable_automatic_translations_due_to_error', false ) === false ) {
 
             /* google has a problem translating this characters ( '%', '$', '#' )...for some reasons it puts spaces after them so we need to 'encode' them and decode them back. hopefully it won't break anything important */
-            $trp_exclude_words_from_automatic_translation = apply_filters('trp_exclude_words_from_automatic_translation', array('%', '$', '#'));
+            /* we put '%s' before '%' because google seems to transform %s into % in strings for some languages which causes a 500 Fata Error in PHP 8*/
+            $trp_exclude_words_from_automatic_translation = apply_filters('trp_exclude_words_from_automatic_translation', array('%s','%', '$', '#'));
             $placeholders = $this->get_placeholders(count($trp_exclude_words_from_automatic_translation));
             $shortcode_tags_to_execute = apply_filters( 'trp_do_these_shortcodes_before_automatic_translation', array('trp_language') );
 

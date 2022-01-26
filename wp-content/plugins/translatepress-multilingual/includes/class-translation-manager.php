@@ -38,15 +38,15 @@ class TRP_Translation_Manager
      */
     protected function conditions_met($mode = 'true')
     {
-        if (isset($_REQUEST['trp-edit-translation']) && esc_attr($_REQUEST['trp-edit-translation']) == $mode) {
+        if (isset($_REQUEST['trp-edit-translation']) && sanitize_text_field($_REQUEST['trp-edit-translation']) == $mode) {
             if (current_user_can(apply_filters('trp_translating_capability', 'manage_options')) && !is_admin()) {
                 return true;
-            } elseif (esc_attr($_REQUEST['trp-edit-translation']) == "preview") {
+            } elseif (sanitize_text_field($_REQUEST['trp-edit-translation']) == "preview") {
                 return true;
             } else {
                 wp_die(
-                    '<h1>' . esc_html__('Cheatin&#8217; uh?') . '</h1>' .
-                    '<p>' . esc_html__('Sorry, you are not allowed to access this page.') . '</p>',
+                    '<h1>' . esc_html__('Cheatin&#8217; uh?') . '</h1>' . //phpcs:ignore  WordPress.WP.I18n.MissingArgDomain
+                    '<p>' . esc_html__('Sorry, you are not allowed to access this page.') . '</p>', //phpcs:ignore  WordPress.WP.I18n.MissingArgDomain
                     403
                 );
             }
@@ -211,7 +211,7 @@ class TRP_Translation_Manager
         if (defined('DOING_AJAX') && DOING_AJAX && current_user_can(apply_filters('trp_translating_capability', 'manage_options'))) {
             check_ajax_referer('trp_editor_user_meta', 'security');
             if (isset($_POST['action']) && $_POST['action'] === 'trp_save_editor_user_meta' && !empty($_POST['user_meta'])) {
-                $submitted_user_meta = json_decode(stripslashes($_POST['user_meta']), true);
+                $submitted_user_meta = json_decode(stripslashes($_POST['user_meta']), true); /* phpcs:ignore */ /* sanitized bellow */
                 $existing_user_meta = $this->get_editor_user_meta();
                 foreach ($existing_user_meta as $key => $existing) {
                     if (isset($submitted_user_meta[$key])) {
@@ -221,7 +221,7 @@ class TRP_Translation_Manager
                 update_user_meta(get_current_user_id(), 'trp_editor_user_meta', $existing_user_meta);
             }
         }
-        echo trp_safe_json_encode(array());
+        echo trp_safe_json_encode(array());//phpcs:ignore
         die();
     }
 
@@ -522,23 +522,26 @@ class TRP_Translation_Manager
     {
 
 
-        global $trp_translated_gettext_texts;
-        if (!is_admin() || $this::is_ajax_on_frontend()) {
-            global $TRP_LANGUAGE;
+        global $trp_translated_gettext_texts, $trp_translated_gettext_texts_language;
+        if ( $this->processing_gettext_is_needed() ){
+            $language = get_locale();
 
-            if (!$this->trp_query) {
+            if ( in_array( $language, $this->settings['translation-languages'] ) ) {
+                $trp_translated_gettext_texts_language = $language;
                 $trp = TRP_Translate_Press::get_trp_instance();
-                $this->trp_query = $trp->get_component('query');
-            }
-
-            $strings = $this->trp_query->get_all_gettext_strings($TRP_LANGUAGE);
-            if (!empty($strings)) {
-                $trp_translated_gettext_texts = $strings;
-
-                foreach ($trp_translated_gettext_texts as $key => $value) {
-                    $trp_strings[$value['domain'] . '::' . $value['original']] = $value;
+                if ( !$this->trp_query ) {
+                    $this->trp_query = $trp->get_component( 'query' );
                 }
-                $trp_translated_gettext_texts = $trp_strings;
+
+                $strings = $this->trp_query->get_all_gettext_strings( $language );
+                if ( !empty( $strings ) ) {
+                    $trp_translated_gettext_texts = $strings;
+
+                    foreach ( $trp_translated_gettext_texts as $key => $value ) {
+                        $trp_strings[ $value['domain'] . '::' . $value['original'] ] = $value;
+                    }
+                    $trp_translated_gettext_texts = $trp_strings;
+                }
             }
         }
     }
@@ -551,14 +554,14 @@ class TRP_Translation_Manager
         $is_ajax_on_frontend = $this::is_ajax_on_frontend();
 
         /* on ajax hooks from frontend that have the init hook ( we found WooCommerce has it ) apply it earlier */
-        if ($is_ajax_on_frontend) {
+        if ($is_ajax_on_frontend || apply_filters( 'trp_apply_gettext_early', false ) ) {
             add_action('wp_loaded', array($this, 'apply_gettext_filter'));
         } else {//otherwise start from the wp_head hook
             add_action('wp_head', array($this, 'apply_gettext_filter'), 100);
         }
 
         //if we have woocommerce installed and it is not an ajax request add a gettext hook starting from wp_loaded and remove it on wp_head
-        if (class_exists('WooCommerce') && !$is_ajax_on_frontend) {
+        if (class_exists('WooCommerce') && !$is_ajax_on_frontend && !apply_filters( 'trp_apply_gettext_early', false ) ) {
             // WooCommerce launches some ajax calls before wp_head, so we need to apply_gettext_filter earlier to catch them
             add_action('wp_loaded', array($this, 'apply_woocommerce_gettext_filter'), 19);
         }
@@ -583,8 +586,7 @@ class TRP_Translation_Manager
         $this->call_gettext_filters('woocommerce_');
     }
 
-    public function call_gettext_filters($prefix = '')
-    {
+    public function processing_gettext_is_needed(){
         global $pagenow;
 
         if (!$this->url_converter) {
@@ -596,12 +598,68 @@ class TRP_Translation_Manager
         }
 
         // Do not process gettext strings on wp-login pages. Do not process strings in admin area except for when when is_ajax_on_frontend. Do not process gettext strings when is rest api from admin url referer. Do not process gettext on xmlrpc.pho
-        if (($pagenow != 'wp-login.php') && (!is_admin() || $this::is_ajax_on_frontend()) && !$this->is_admin_request && $pagenow != 'xmlrpc.php') {
+        return (($pagenow != 'wp-login.php') && (!is_admin() || $this::is_ajax_on_frontend()) && !$this->is_admin_request && $pagenow != 'xmlrpc.php');
+    }
+
+    public function call_gettext_filters($prefix = '') {
+        if ( $this->processing_gettext_is_needed() ){
             add_filter('gettext', array($this, $prefix . 'process_gettext_strings'), 100, 3);
             add_filter('gettext_with_context', array($this, $prefix . 'process_gettext_strings_with_context'), 100, 4);
             add_filter('ngettext', array($this, $prefix . 'process_ngettext_strings'), 100, 5);
             add_filter('ngettext_with_context', array($this, $prefix . 'process_ngettext_strings_with_context'), 100, 6);
+
+            do_action('trp_call_gettext_filters');
         }
+    }
+
+    public function is_domain_loaded_in_locale( $domain, $locale ){
+        $localemo = $locale . '.mo';
+        $length = strlen( $localemo );
+
+        global $l10n;
+        if ( isset( $l10n[$domain] ) && is_object( $l10n[$domain] ) ) {
+            $mo_filename = $l10n[$domain]->get_filename();
+
+            // $mo_filename does not end with string $locale
+            if ( substr( strtolower( $mo_filename ), -$length ) == strtolower( $localemo ) ) {
+                return true;
+            }else{
+                return false;
+            }
+        }
+
+        // if something is not as expected, return true so that we do not interfere
+        return true;
+    }
+
+    public function verify_locale_of_loaded_textdomain(){
+        global $l10n;
+        if ( !empty( $l10n) && is_array( $l10n ) ){
+
+            $reload_domains = array();
+            $locale = get_locale();
+
+
+            foreach($l10n as $domain => $item ){
+                if ( !$this->is_domain_loaded_in_locale( $domain, $locale ) ) {
+                    $reload_domains[] = $domain;
+                }
+            }
+
+            foreach($reload_domains as $domain ){
+                if ( isset( $l10n[$domain] ) && is_object( $l10n[$domain] ) ) {
+                    $path     = $l10n[ $domain ]->get_filename();
+                    $new_path = preg_replace( '/' . $domain . '-(.*).mo$/i', $domain . '-' . $locale . '.mo', $path );
+                    if ( $new_path !== $path ) {
+                        unset( $l10n[ $domain ] );
+                        load_textdomain( $domain, $new_path );
+                    }
+                }
+            }
+        }
+
+        // do this function only once per execution. The init hook can be called more than once
+        remove_action( 'trp_call_gettext_filters', array( $this, 'verify_locale_of_loaded_textdomain' ) );
     }
 
     /**
@@ -612,7 +670,7 @@ class TRP_Translation_Manager
     {
 
         /* for our own actions return false */
-        if (isset($_REQUEST['action']) && strpos($_REQUEST['action'], 'trp_') === 0)
+        if (isset($_REQUEST['action']) && strpos( sanitize_text_field( $_REQUEST['action'] ), 'trp_') === 0)
             return false;
 
         $trp = TRP_Translate_Press::get_trp_instance();
@@ -662,7 +720,7 @@ class TRP_Translation_Manager
     {
 
         /* for our own actions don't do nothing */
-        if (isset($_REQUEST['action']) && strpos($_REQUEST['action'], 'trp_') === 0)
+        if ( isset($_REQUEST['action']) && strpos( sanitize_text_field( $_REQUEST['action'] ), 'trp_') === 0 )
             return;
 
         /* if the request came from preview mode make sure to keep it */
@@ -719,12 +777,13 @@ class TRP_Translation_Manager
             return $translation;
 
         /* for our own actions don't do nothing */
-        if (isset($_REQUEST['action']) && strpos($_REQUEST['action'], 'trp_') === 0)
+        if (isset($_REQUEST['action']) && strpos( sanitize_text_field( $_REQUEST['action'] ), 'trp_') === 0)
             return $translation;
 
         /* get_locale() returns WP Settings Language (WPLANG). It might not be a language in TP so it may not have a TP table. */
         $current_locale = get_locale();
-        if (!in_array($current_locale, $this->settings['translation-languages'])) {
+        global $trp_translated_gettext_texts_language;
+        if ( !in_array($current_locale, $this->settings['translation-languages'] ) || empty( $trp_translated_gettext_texts_language) || $trp_translated_gettext_texts_language !== $current_locale ) {
             return $translation;
         }
 
@@ -737,6 +796,10 @@ class TRP_Translation_Manager
             $tp_gettext_is_ajax_on_frontend = $this::is_ajax_on_frontend();
 
         if (!defined('DOING_AJAX') || $tp_gettext_is_ajax_on_frontend) {
+            if ( !$this->is_domain_loaded_in_locale($domain, $current_locale) ){
+                $translation = $text;
+            }
+
             $db_id = '';
             $skip_gettext_querying = apply_filters('trp_skip_gettext_querying', false, $translation, $text, $domain);
             if (!$skip_gettext_querying) {
@@ -759,7 +822,7 @@ class TRP_Translation_Manager
                         $trp_translated_gettext_text = $trp_translated_gettext_texts[$domain . '::' . $text];
 
                         if (!empty($trp_translated_gettext_text['translated']) && $translation != $trp_translated_gettext_text['translated']) {
-                            $translation = str_replace(trim($text), $trp_translated_gettext_text['translated'], $text);
+                            $translation = str_replace(trim($text), trp_sanitize_string($trp_translated_gettext_text['translated']), $text);
                         }
                         $db_id = $trp_translated_gettext_text['id'];
                         $found_in_db = true;
@@ -816,7 +879,7 @@ class TRP_Translation_Manager
                 }
                 $machine_translation_codes = $this->trp_languages->get_iso_codes($this->settings['translation-languages']);
                 /* We assume Gettext strings are in English so don't automatically translate into English */
-                if ($machine_translation_codes[$TRP_LANGUAGE] != 'en' && $this->machine_translator->is_available()) {
+                if ($machine_translation_codes[$TRP_LANGUAGE] != 'en' && $this->machine_translator->is_available(array($TRP_LANGUAGE))) {
                     global $trp_gettext_strings_for_machine_translation;
                     if ($text == $translation) {
                         foreach ($trp_translated_gettext_texts as $trp_translated_gettext_text) {
@@ -877,8 +940,8 @@ class TRP_Translation_Manager
                 }
             }
             unset($callstack_functions);//maybe free up some memory
-
-            if (did_action('init')) {
+            global $trp_output_buffer_started;
+            if (did_action('init') && isset($trp_output_buffer_started) && $trp_output_buffer_started) {//check here for our global $trp_output_buffer_started, don't wrap the gettexts if they are not processed by our cleanup callbacks for the buffers
                 if ((!empty($TRP_LANGUAGE) && $this->settings["default-language"] != $TRP_LANGUAGE) || (isset($_REQUEST['trp-edit-translation']) && $_REQUEST['trp-edit-translation'] == 'preview')) {
                     //add special start and end tags so that it does not influence html in any way. we will replace them with < and > at the start of the translate function
                     $translation = apply_filters('trp_process_gettext_tags', '#!trpst#trp-gettext data-trpgettextoriginal=' . $db_id . '#!trpen#' . $translation . '#!trpst#/trp-gettext#!trpen#', $translation, $skip_gettext_querying, $text, $domain);
@@ -1000,8 +1063,10 @@ class TRP_Translation_Manager
                 $this->machine_translator = $trp->get_component('machine_translator');
             }
 
+            // Gettext strings are considered by default to be in the English language
+            $source_language = apply_filters('trp_gettext_source_language', 'en_US', $TRP_LANGUAGE, array(), $trp_gettext_strings_for_machine_translation);
             // machine translate new strings
-            if ($this->machine_translator->is_available()) {
+            if ($this->machine_translator->is_available(array($source_language, $TRP_LANGUAGE))) {
 
                 /* Transform associative array into ordered numeric array. We need to keep keys numeric and ordered because $new_strings and $machine_strings depend on it.
                  * Array was constructed as associative with db ids as keys to avoid duplication.
@@ -1013,8 +1078,6 @@ class TRP_Translation_Manager
                     $new_strings[] = $trp_gettext_string_for_machine_translation['original'];
                 }
 
-                // Gettext strings are considered by default to be in the English language
-                $source_language = apply_filters('trp_gettext_source_language', 'en_US', $TRP_LANGUAGE, $new_strings, $trp_gettext_strings_for_machine_translation);
                 if (apply_filters('trp_gettext_allow_machine_translation', true, $source_language, $TRP_LANGUAGE, $new_strings, $trp_gettext_strings_for_machine_translation)) {
                     $machine_strings = $this->machine_translator->translate($new_strings, $TRP_LANGUAGE, $source_language);
                 } else {
@@ -1048,8 +1111,8 @@ class TRP_Translation_Manager
     {
 
         /* remove trp-gettext wrap */
-        $dateformatstring = preg_replace('/#!trpst#trp-gettext (.*?)#!trpen#/', '', $dateformatstring);
-        $dateformatstring = preg_replace('/#!trpst#(.?)\/trp-gettext#!trpen#/', '', $dateformatstring);
+        $dateformatstring = preg_replace('/#!trpst#trp-gettext (.*?)#!trpen#/i', '', $dateformatstring);
+        $dateformatstring = preg_replace('/#!trpst#(.?)\/trp-gettext#!trpen#/i', '', $dateformatstring);
 
 
         global $wp_locale;
@@ -1159,13 +1222,15 @@ class TRP_Translation_Manager
     static function strip_gettext_tags($string)
     {
         if (is_string($string) && strpos($string, 'data-trpgettextoriginal=') !== false) {
-            $string = preg_replace('/ data-trpgettextoriginal=\d+#!trpen#/', '', $string);
-            $string = preg_replace('/data-trpgettextoriginal=\d+#!trpen#/', '', $string);//sometimes it can be without space
-            $string = str_replace('#!trpst#trp-gettext', '', $string);
-            $string = str_replace('#!trpst#/trp-gettext', '', $string);
-            $string = str_replace('#!trpst#\/trp-gettext', '', $string);
-            $string = str_replace('#!trpen#', '', $string);
+            // final 'i' is for case insensitive. same for the 'i' in  str_ireplace
+            $string = preg_replace('/ data-trpgettextoriginal=\d+#!trpen#/i', '', $string);
+            $string = preg_replace('/data-trpgettextoriginal=\d+#!trpen#/i', '', $string);//sometimes it can be without space
+            $string = str_ireplace('#!trpst#trp-gettext', '', $string);
+            $string = str_ireplace('#!trpst#/trp-gettext', '', $string);
+            $string = str_ireplace('#!trpst#\/trp-gettext', '', $string);
+            $string = str_ireplace('#!trpen#', '', $string);
         }
+
 
         return $string;
     }
@@ -1199,7 +1264,7 @@ class TRP_Translation_Manager
                 }
 
                 if ($current_user_can_change_roles) {
-                    if (!wp_verify_nonce($_REQUEST['trp-view-as-nonce'], 'trp_view_as' . sanitize_text_field($_REQUEST['trp-view-as']) . get_current_user_id())) {
+                    if (!wp_verify_nonce( sanitize_text_field($_REQUEST['trp-view-as-nonce'] ), 'trp_view_as' . sanitize_text_field($_REQUEST['trp-view-as']) . get_current_user_id())) {
                         wp_die(esc_html__('Security check', 'translatepress-multilingual'));
                     } else {
                         global $current_user;
@@ -1312,6 +1377,19 @@ class TRP_Translation_Manager
             } else {
                 return $date_format;
             }
+        }
+    }
+
+    /**
+     * Prevent indexing edit translation preview pages.
+     *
+     * Hooked to trp_head, wp_head
+     *
+     */
+    public function output_noindex_tag()
+    {
+        if( $this->conditions_met( 'true' ) || $this->conditions_met( 'preview' ) ){
+            echo '<meta name="robots" content="noindex, nofollow">';
         }
     }
 

@@ -8,7 +8,7 @@
 function trp_the_language_switcher(){
     $trp = TRP_Translate_Press::get_trp_instance();
     $language_switcher = $trp->get_component( 'language_switcher' );
-    echo $language_switcher->language_switcher();
+    echo $language_switcher->language_switcher(); /* phpcs:ignore */ /* escaped inside the function */
 }
 
 /**
@@ -17,7 +17,7 @@ function trp_the_language_switcher(){
  * @return mixed|string|void
  */
 function trp_safe_json_encode($value){
-    if (version_compare(PHP_VERSION, '5.4.0') >= 0) {
+    if (version_compare(PHP_VERSION, '5.4.0') >= 0 && apply_filters('trp_safe_json_encode_pretty_print', true )) {
         $encoded = json_encode($value, JSON_PRETTY_PRINT);
     } else {
         $encoded = json_encode($value);
@@ -69,7 +69,7 @@ function trp_x( $text, $context, $domain, $language ){
 
     if( !empty( $path ) ) {
 
-        $mo_file = wp_cache_get( 'trp_x_' . $domain .'_'. $language );
+        $mo_file = trp_cache_get( 'trp_x_' . $domain .'_'. $language );
 
         if( false === $mo_file ){
             $mo_file = new MO();
@@ -128,17 +128,17 @@ function trp_add_affiliate_id_to_link( $link ){
     //Avangate Affiliate Network
     $avg_affiliate_id = get_option('translatepress_avg_affiliate_id');
     if  ( !empty( $avg_affiliate_id ) ) {
-        return esc_url( add_query_arg( 'avgref', $avg_affiliate_id, $link ) );
+        $link = add_query_arg( 'avgref', $avg_affiliate_id, $link );
     }
     else{
         // AffiliateWP
         $affiliate_id = get_option('translatepress_affiliate_id');
         if  ( !empty( $affiliate_id ) ) {
-            return esc_url( add_query_arg( 'ref', $affiliate_id, $link ) );
+            $link = add_query_arg( 'ref', $affiliate_id, $link );
         }
     }
 
-    return esc_url( $link );
+    return esc_url( apply_filters( 'trp_affiliate_link', $link ) );
 }
 
 /**
@@ -148,7 +148,7 @@ function trp_add_affiliate_id_to_link( $link ){
  * Removes any unwanted html code from the string.
  * Do not confuse with trim.
  */
-function trp_sanitize_string( $filtered ){
+function trp_sanitize_string( $filtered, $execute_wp_kses = true ){
 	$filtered = preg_replace( '/<script\b[^>]*>(.*?)<\/script>/is', '', $filtered );
 
 	// don't remove \r \n \t. They are part of the translation, they give structure and context to the text.
@@ -166,7 +166,17 @@ function trp_sanitize_string( $filtered ){
 		$filtered = trim( preg_replace('/ +/', ' ', $filtered) );
 	}
 
-	return $filtered;
+    if ( $execute_wp_kses ){
+        $filtered = trp_wp_kses( $filtered );
+    }
+    return $filtered;
+}
+
+function trp_wp_kses($string){
+    if ( apply_filters('trp_apply_wp_kses_on_strings', true) ){
+        $string = wp_kses_post($string);
+    }
+    return $string;
 }
 
 /**
@@ -433,6 +443,28 @@ function trp_remove_accents( $string ){
 };
 
 /**
+ * Output an SVG depending on case.
+ *
+ * @param string $icon The icon to output. Default no icon.
+ */
+function trp_output_svg( $icon = '' ) {
+    switch ( $icon ) {
+        case 'check':
+            ?>
+            <svg class="trp-svg-icon fas-check-circle"><use xlink:href="#check-circle"></use></svg>
+            <?php
+            break;
+        case 'error':
+            ?>
+            <svg class="trp-svg-icon fas-times-circle"><use xlink:href="#times-circle"></use></svg>
+            <?php
+            break;
+        default:
+            break;
+    }
+}
+
+/**
  * Debuger function. Mainly designed for the get_url_for_language() function
  *
  * @since 1.3.6
@@ -471,12 +503,18 @@ function trp_is_paid_version() {
 
 	//list of class names
 	$addons = apply_filters( 'trp_paid_addons', array(
-		'TRP_Automatic_Language_Detection',
-		'TRP_Browse_as_other_Role',
-		'TRP_Extra_Languages',
-		'TRP_Navigation_Based_on_Language',
-		'TRP_Seo_Pack',
-		'TRP_Translator_Accounts',
+		'TRP_IN_Automatic_Language_Detection',
+		'TRP_IN_Browse_as_other_Role',
+		'TRP_IN_Extra_Languages',
+		'TRP_IN_Navigation_Based_on_Language',
+		'TRP_IN_Seo_Pack',
+		'TRP_IN_Translator_Accounts',
+        'TRP_Automatic_Language_Detection',
+        'TRP_Browse_as_other_Role',
+        'TRP_Extra_Languages',
+        'TRP_Navigation_Based_on_Language',
+        'TRP_Seo_Pack',
+        'TRP_Translator_Accounts',
 	) );
 
 	foreach ( $addons as $className ) {
@@ -540,4 +578,45 @@ function trp_get_languages($nodefault=null)
         unset ($published_lang_labels[$default_lang_labels]);
     }
     return ($published_lang_labels);
+}
+
+/**
+ * Wrapper function for wp_cache_get() that bypasses cache if TRP_DEBUG is on
+ * @param int|string $key   The key under which the cache contents are stored.
+ * @param string     $group Optional. Where the cache contents are grouped. Default empty.
+ * @param bool       $force Optional. Whether to force an update of the local cache
+ *                          from the persistent cache. Default false.
+ * @param bool       $found Optional. Whether the key was found in the cache (passed by reference).
+ *                          Disambiguates a return of false, a storable value. Default null.
+ * @return mixed|false The cache contents on success, false on failure to retrieve contents or false when WP_DEBUG is on
+ *
+ */
+function trp_cache_get( $key, $group = '', $force = false, &$found = null ){
+    if( defined( 'TRP_DEBUG' ) && TRP_DEBUG == true )
+        return false;
+
+    $cache = wp_cache_get( $key, $group, $force, $found );
+    return $cache;
+}
+
+/**
+ * Wrapper function for get_transient() that bypasses cache if TRP_DEBUG is on
+ */
+function trp_get_transient( $transient ){
+    if( ( defined( 'TRP_DEBUG' ) && TRP_DEBUG == true ) || defined( 'TRP_DEBUG_TRANSIENT' ) && TRP_DEBUG_TRANSIENT == true  )
+        return false;
+
+    return get_transient($transient);
+}
+
+/**
+ * Determine if the setting in Advanced Options should make us add a slash at end of string
+ * @param $settings the TranslatePress settings object
+ * @return bool
+ */
+function trp_force_slash_at_end_of_link( $settings ){
+    if ( !empty( $settings['trp_advanced_settings'] ) && isset( $settings['trp_advanced_settings']['force_slash_at_end_of_links'] ) && $settings['trp_advanced_settings']['force_slash_at_end_of_links'] === 'yes' )
+        return true;
+    else
+        return false;
 }

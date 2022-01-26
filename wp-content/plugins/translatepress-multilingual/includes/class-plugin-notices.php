@@ -43,7 +43,7 @@ class TRP_Add_General_Notices{
             // Check that the user hasn't already clicked to ignore the message
             if ( ! get_user_meta($user_id, $this->notificationId.'_dismiss_notification' ) || $this->force_show  ) {//ignore the dismissal if we have force_show
                 add_filter('safe_style_css', array( $this, 'allow_z_index_in_wp_kses'));
-                echo $finalMessage = wp_kses( apply_filters($this->notificationId.'_notification_message','<div class="'. $this->notificationClass .'" >'.$this->notificationMessage.'</div>', $this->notificationMessage), [ 'div' => [ 'class' => [] ], 'p' => ['style' => [], 'class' => []], 'a' => ['href' => [], 'type'=> [], 'class'=> [], 'style'=>[]], 'span' => ['class'=> []], 'strong' => [] ] );
+                echo wp_kses( apply_filters($this->notificationId.'_notification_message','<div class="'. $this->notificationClass .'" style="position:relative;'  . ((strpos($this->notificationClass, 'trp-narrow')!==false ) ? 'max-width: 825px;' : '') . '" >'.$this->notificationMessage.'</div>', $this->notificationMessage), [ 'div' => [ 'class' => [],'style' => [] ], 'p' => ['style' => [], 'class' => []], 'a' => ['href' => [], 'type'=> [], 'class'=> [], 'style'=>[], 'title'=>[],'target'=>[]], 'span' => ['class'=> []], 'strong' => [] ] );
                 remove_filter('safe_style_css', array( $this, 'allow_z_index_in_wp_kses'));
             }
             do_action( $this->notificationId.'_notification_displayed', $current_user, $pagenow );
@@ -53,6 +53,7 @@ class TRP_Add_General_Notices{
 
     function allow_z_index_in_wp_kses( $styles ) {
         $styles[] = 'z-index';
+        $styles[] = 'position';
         return $styles;
     }
 
@@ -296,10 +297,10 @@ Class TRP_Plugin_Notifications {
     public function is_plugin_page() {
         if( !empty( $this->pluginPages ) ){
             foreach ( $this->pluginPages as $pluginPage ){
-                if( ! empty( $_GET['page'] ) && false !== strpos( $_GET['page'], $pluginPage ) )
+                if( ! empty( $_GET['page'] ) && false !== strpos( sanitize_text_field( $_GET['page'] ), $pluginPage ) )
                     return true;
 
-                if( ! empty( $_GET['post_type'] ) && false !== strpos( $_GET['post_type'], $pluginPage ) )
+                if( ! empty( $_GET['post_type'] ) && false !== strpos( sanitize_text_field( $_GET['post_type'] ), $pluginPage ) )
                     return true;
 
                 if( ! empty( $_GET['post'] ) && false !== strpos( get_post_type( (int)$_GET['post'] ), $pluginPage ) )
@@ -345,7 +346,8 @@ class TRP_Trigger_Plugin_Notifications{
 
         /* License Notifications */
         $license_details = get_option( 'trp_license_details' );
-        if( !empty($license_details) ){
+        $is_demosite = ( strpos(site_url(), 'https://demo.translatepress.com' ) !== false );
+        if( !empty($license_details) && !$is_demosite){
             /* if we have any invalid response for any of the addon show just the error notification and ignore any valid responses */
             if( !empty( $license_details['invalid'] ) ){
 
@@ -429,6 +431,31 @@ class TRP_Trigger_Plugin_Notifications{
             $message .= '<a href="' . add_query_arg(array('trp_dismiss_admin_notification' => $notification_id)) . '" type="button" class="notice-dismiss"><span class="screen-reader-text">' . __('Dismiss this notice.', 'translatepress-multilingual') . '</span></a>';
 
             $notifications->add_notification($notification_id, $message, 'trp-notice trp-narrow notice notice-info', true, array('translate-press'));
+        }
+
+
+        /*
+         * One or more languages are unsupported by automatic translation.
+         */
+        $trp = TRP_Translate_Press::get_trp_instance();
+        $machine_translator = $trp->get_component( 'machine_translator' );
+
+        if ($machine_translator != null ) {
+            if ( apply_filters( 'trp_mt_available_supported_languages_show_notice', true, $this->settings['translation-languages'], $this->settings ) &&
+                'yes' === $this->settings['trp_machine_translation_settings']['machine-translation'] &&
+                !$machine_translator->check_languages_availability( $this->settings['translation-languages'] )
+            ) {
+                /* this must be unique */
+                $notification_id = 'trp_mt_unsupported_languages';
+
+                $message = '<p style="margin-top: 16px;padding-right:30px;">';
+                $message .= sprintf( __( 'One or more languages are unsupported by the automatic translation provider. Please check the <strong>TranslatePress -> <a href="%s">Automatic Translation</a></strong> page for more information.', 'translatepress-multilingual' ), admin_url( 'admin.php?page=trp_machine_translation#trp_unsupported_languages' ) );
+                $message .= '</p>';
+                //make sure to use the trp_dismiss_admin_notification arg
+                $message .= '<a href="' . add_query_arg( array( 'trp_dismiss_admin_notification' => $notification_id ) ) . '" type="button" class="notice-dismiss"><span class="screen-reader-text">' . __( 'Dismiss this notice.', 'translatepress-multilingual' ) . '</span></a>';
+
+                $notifications->add_notification( $notification_id, $message, 'trp-notice trp-narrow notice notice-info', true, array( 'translate-press' ) );
+            }
         }
 
     }

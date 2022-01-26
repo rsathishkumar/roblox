@@ -53,14 +53,13 @@ class TRP_Settings{
         }
         $output .= '</select>';
 
-        echo $output;
+        echo $output;/* phpcs:ignore */ /* escaped above */
     }
 
     /**
-     * Echo html for selecting language from all available language in settings.
+     * Echo html for selecting language selector position.
      *
-     * @param string $ls_type       shortcode_options | menu_options | floater_options
-     * @param string $ls_setting    The selected language switcher customization setting (get_language_switcher_options())
+     * @param string $ls_position    The selected language switcher position
      */
     public function output_language_switcher_floater_possition( $ls_position ){
         $ls_options = array(
@@ -78,8 +77,29 @@ class TRP_Settings{
         }
         $output .= '</select>';
 
-        echo $output;
+        echo $output; /* phpcs:ignore */ /* escaped above */
     }
+
+	/**
+	 * Echo html for selecting language selector color.
+	 *
+	 * @param string $ls_color    The selected language switcher color.
+	 */
+	public function output_language_switcher_floater_color( $ls_color ){
+		$ls_options = array(
+			'dark'  => array( 'label' => __( 'Dark', 'translatepress-multilingual' ) ),
+			'light'   => array( 'label' => __( 'Light', 'translatepress-multilingual' ) ),
+		);
+
+		$output = '<select id="floater-color" name="trp_settings[floater-color]" class="trp-select trp-ls-select-option">';
+		foreach( $ls_options as $key => $ls_option ){
+			$selected = ( $ls_color == $key ) ? 'selected' : '';
+			$output .= '<option value="' . esc_attr( $key ) . '" ' . esc_attr( $selected ) . ' >' . esc_html( $ls_option['label'] ). '</option>';
+		}
+		$output .= '</select>';
+
+		echo $output; /* phpcs:ignore */ /* escaped above */
+	}
 
     /**
      * Returns settings_option.
@@ -239,6 +259,16 @@ class TRP_Settings{
             $settings['floater-position'] = 'bottom-right';
         }
 
+	    if ( ! isset( $settings['floater-color'] ) ){
+		    $settings['floater-color'] = 'dark';
+	    }
+
+	    if ( !empty( $settings['trp-ls-show-poweredby'] ) ){
+		    $settings['trp-ls-show-poweredby'] = sanitize_text_field( $settings['trp-ls-show-poweredby'] );
+	    }else{
+		    $settings['trp-ls-show-poweredby'] = 'no';
+	    }
+
         if ( ! isset( $settings['url-slugs'] ) ){
             $settings['url-slugs'] = $this->trp_languages->get_iso_codes( $settings['translation-languages'] );
         }
@@ -250,6 +280,22 @@ class TRP_Settings{
                 $settings['url-slugs'][$language_code] = sanitize_title( strtolower( $settings['url-slugs'][$language_code] )) ;
             }
         }
+
+        foreach ($settings['translation-languages'] as $value=>$language){
+            if(isset($settings['translation-languages-formality'][$value])) {
+                if ( $settings['translation-languages-formality'][ $value ] == 'informal' ) {
+                    $settings['translation-languages-formality-parameter'][ $language ] = 'informal';
+                } else {
+                    if ( $settings['translation-languages-formality'][ $value ] == 'formal' ) {
+                        $settings['translation-languages-formality-parameter'][ $language ] = 'formal';
+                    } else {
+                        $settings['translation-languages-formality-parameter'][ $language ] = 'default';
+                    }
+                }
+            }
+        }
+
+        unset($settings['translation-languages-formality']);
 
         // check for duplicates in url slugs
         $duplicate_exists = false;
@@ -318,6 +364,8 @@ class TRP_Settings{
             'menu-options'                         => 'flags-full-names',
             'floater-options'                      => 'flags-full-names',
             'floater-position'                     => 'bottom-right',
+	        'floater-color'                        => 'dark',
+	        'trp-ls-show-poweredby'                => 'no',
             'url-slugs'                            => array( 'en_US' => 'en', '' ),
         );
 
@@ -435,7 +483,7 @@ class TRP_Settings{
      *
      * @param array $languages          Array of language codes to create menu items for.
      */
-    protected function create_menu_entries( $languages ){
+    public function create_menu_entries( $languages ){
         if ( ! $this->trp_languages ){
             $trp = TRP_Translate_Press::get_trp_instance();
             $this->trp_languages = $trp->get_component( 'languages' );
@@ -444,6 +492,11 @@ class TRP_Settings{
         $published_languages['current_language'] = __( 'Current Language', 'translatepress-multilingual' );
         $languages[] = 'current_language';
         $posts = get_posts( array( 'post_type' =>'language_switcher',  'posts_per_page'   => -1  ) );
+
+        if ( count( $published_languages ) == 3 ){
+            $languages[] = 'opposite_language';
+            $published_languages['opposite_language'] = __( 'Opposite Language', 'translatepress-multilingual' );
+        }
 
         foreach ( $published_languages as $language_code => $language_name ) {
             $existing_ls = null;
@@ -510,10 +563,26 @@ class TRP_Settings{
 
         $active_tab = 'translate-press';
         if ( isset( $_GET['page'] ) ){
-            $active_tab = esc_attr( wp_unslash( $_GET['page'] ) );
+            $active_tab = sanitize_text_field( wp_unslash( $_GET['page'] ) );
         }
 
         require TRP_PLUGIN_DIR . 'partials/settings-navigation-tabs.php';
+    }
+
+    /**
+     * Add SVG icon symbols to use throughout the admin.
+     */
+    public function add_svg_icons() {
+        ?>
+        <svg width="0" height="0" class="hidden">
+			<symbol aria-hidden="true" data-prefix="fas" data-icon="check-circle" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" id="check-circle">
+                <path fill="currentColor" d="M504 256c0 136.967-111.033 248-248 248S8 392.967 8 256 119.033 8 256 8s248 111.033 248 248zM227.314 387.314l184-184c6.248-6.248 6.248-16.379 0-22.627l-22.627-22.627c-6.248-6.249-16.379-6.249-22.628 0L216 308.118l-70.059-70.059c-6.248-6.248-16.379-6.248-22.628 0l-22.627 22.627c-6.248 6.248-6.248 16.379 0 22.627l104 104c6.249 6.249 16.379 6.249 22.628.001z"></path>
+            </symbol>
+            <symbol aria-hidden="true" data-prefix="fas" data-icon="times-circle" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" id="times-circle">
+                <path fill="currentColor" d="M256 8C119 8 8 119 8 256s111 248 248 248 248-111 248-248S393 8 256 8zm121.6 313.1c4.7 4.7 4.7 12.3 0 17L338 377.6c-4.7 4.7-12.3 4.7-17 0L256 312l-65.1 65.6c-4.7 4.7-12.3 4.7-17 0L134.4 338c-4.7-4.7-4.7-12.3 0-17l65.6-65-65.6-65.1c-4.7-4.7-4.7-12.3 0-17l39.6-39.6c4.7-4.7 12.3-4.7 17 0l65 65.7 65.1-65.6c4.7-4.7 12.3-4.7 17 0l39.6 39.6c4.7 4.7 4.7 12.3 0 17L312 256l65.6 65.1z"></path>
+            </symbol>
+        </svg>
+        <?php
     }
 
     /**
@@ -535,6 +604,18 @@ class TRP_Settings{
         $links['go_pro'] = sprintf( '<a href="%1$s" target="_blank" style="color: #e76054; font-weight: bold;">%2$s</a>', trp_add_affiliate_id_to_link('https://translatepress.com/pricing/?utm_source=wpbackend&utm_medium=clientsite&utm_content=tpeditor&utm_campaign=tpfree'), __( 'Pro Features', 'translatepress-multilingual' ) );
 
         return $links;
+    }
+
+    public function trp_dismiss_email_course(){
+
+        $user_id = get_current_user_id();
+
+        if( empty( $user_id ) )
+            die();
+
+        update_user_meta( $user_id, 'trp_email_course_dismissed', 1 );
+        die();
+        
     }
 
 }

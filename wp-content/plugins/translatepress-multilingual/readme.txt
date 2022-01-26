@@ -1,19 +1,19 @@
-﻿=== TranslatePress - Translate Multilingual sites ===
+﻿=== Translate Multilingual sites - TranslatePress ===
 Contributors: cozmoslabs, razvan.mo, madalin.ungureanu, sareiodata, cristophor
 Donate link: https://www.translatepress.com/
 Tags: translate, translation, multilingual, automatic translation, bilingual, front-end translation, google translate, language
 Requires at least: 3.1.0
-Tested up to: 5.5.1
+Tested up to: 5.8.3
 Requires PHP: 5.6.20
-Stable tag: 1.8.5
+Stable tag: 2.1.9
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
 Translate your entire site directly from the front-end and go multilingual, with full support for WooCommerce and page builders + Google Translate integration.
- 
+
 == Description ==
 
-**Experience a better way to translate your WordPress site and go multilingual, directly from the front-end using a friendly user interface.**
+**Experience a better way to translate your WordPress site and go multilingual, directly from the front-end using a visual translation interface.**
 
 TranslatePress is a [WordPress translation plugin](https://translatepress.com/?utm_source=wp.org&utm_medium=tp-description-page&utm_campaign=TPFree) that anyone can use.
 
@@ -37,9 +37,11 @@ https://www.youtube.com/watch?v=pUlYisvBm8g
 * Editorial control allowing you to publish your language only when all your translations are done
 * Conditional display content shortcode based on language [trp_language language="en_US"] English content only [/trp_language]
 * Possibility to [edit gettext strings](https://translatepress.com/edit-plugin-strings/?utm_source=wp.org&utm_medium=tp-description-page&utm_campaign=TPFree) from themes and plugins from English to English, without adding another language. Basically a string-replace functionality.
+* Translate only certain paths and [exclude content from being translated](https://translatepress.com/partially-translate-wordpress-exclude-posts-pages-products/?utm_source=wp.org&utm_medium=tp-description-page&utm_campaign=TPFree)
 * Translation Block feature in which you can translate multiple html elements together
 * Native **Gutenberg** support, so you can easily [translate Gutenberg blocks](https://translatepress.com/translate-gutenberg-blocks-in-wordpress/?utm_source=wp.org&utm_medium=tp-description-page&utm_campaign=TPFree)
 * Out of the box [WooCommerce](https://translatepress.com/translate-woocommerce-products-translatepress/?utm_source=wp.org&utm_medium=tp-description-page&utm_campaign=TPFree) compatibility
+* Use our [FREE Website Translation](https://translatepress.com/free-website-translation-tool-widget/?utm_source=wp.org&utm_medium=tp-description-page&utm_campaign=TPFree) tool/widget to browse any website into your own language.
 
 Note: this plugin uses the Google Translation API to translate the strings on your site. This feature can be enabled or disabled according to your preferences.
 
@@ -138,6 +140,223 @@ For more information please check out our [documentation](https://translatepress
 
 
 == Changelog ==
+= 2.1.9 =
+* Improved database optimization tool by adding option to remove CDATA and untranslated links from TP custom tables
+* Fixed database optimization tool not starting in some cases
+* Fixed edge case error unknown format specifier on php 8 related to automatic translation of gettext strings
+* Added noindex tag to Translation Editor pages to prevent duplicate indexing
+
+= 2.1.8 =
+* Added language formality setting to be used in Automatic Translation
+* Added Advanced option for enabling clickable shortcode language switcher
+* Improved tool for database optimization from Advanced tab
+* Fixed translation blocks ignoring target blank on links
+
+= 2.1.7 =
+* Added form in settings to sign up for TranslatePress email course
+* Fixed issue when logging in that redirected to "page not found" when languages are reordered
+* Fixed hyphenation issue on default language when using WP-typography plugin
+* Fixed notices regarding is_file call
+
+= 2.1.6 =
+* Show sanitized translation when editing gettext strings in Translation Editor
+* Fixed showing translation language instead of default language in some cases in Elementor, Divi and WPBakery editors
+* Fixed breadcrumbs issue with All in One SEO plugin on translation language
+* Fixed Beaver Builder Editor loading loop when Automatic User Language Detection is active
+* Fixed issue with excluding path from translation
+
+= 2.1.5 =
+* Show sanitized translation after saving changes in Translation Editor
+* Improved query for getting existing translations
+* Fixed issue with using wildcard in Translate only certain paths feature
+* Fixed php warning on settings page about DeepL
+
+= 2.1.4 =
+* Optimized automatic translation usage by improved recognition of cdata, js scripts and encoded html
+* Fixed conflict with Ultimate Dashboard
+
+= 2.1.3 =
+* Added Opposite Language menu item when using 2 languages
+* Added support for opposite language in floating language switcher
+* Fixed DeepL API key check showing green icon with incorrect keys
+* Fixed some cases of increased automatic translation usage
+
+= 2.1.2 =
+* Added Advanced option to show opposite language in shortcode language switcher
+* Added CSS class current-language-menu-item to menu language switcher to allow customization
+* Fixed notice in PHP 8 related to custom-languages
+* Corrected Swahili flag
+
+= 2.1.1 =
+* Improved Custom Languages feature
+* Added possibility to easily edit existing language name or flag through Custom Language
+* Added vertical scroll on floating and shortcode language switchers when having many languages
+
+= 2.1.0 =
+* Fixed some cases of missing spaces between words in different html tags on translated pages
+* Fixed conflict with Scriptless Social Sharing plugin
+
+= 2.0.9 =
+* Security improvements
+* Added option to translate content restricted by language in Elementor
+* Added filter to disable independent region hreflang tags
+* Improved notices in TP Settings
+
+= 2.0.8 =
+* Corrected plugin name
+
+= 2.0.7 =
+* Security improvements
+* Added support for WooCommerce /shop/%product_cat% product permalink structure
+* Fixed URL issues with post category when using encoded characters
+* Fixed an issue with Woocommerce product links not being translated when loaded with ajax
+* Fixed notices when using WP Bakery
+* Fixed excerpt character limit in Chinese language
+* Fixed some cases of trimming custom language name in language switcher
+* Fixed adding current-menu-item class on empty menu links
+* Compatibility with Brizy to load correct assets on other languages
+
+= 2.0.6 =
+* Added support for translating form reset button
+* Fixed custom flags getting resized
+* Fixed bug on Add-ons tab
+
+= 2.0.5 =
+* All Premium Add-ons have been repackaged in new archives downloadable from translatepress.com account. All the old plugin Add-ons will no longer receive updates.
+* Reconfigured add-ons to be activated from TP Settings Add-ons tab
+* Added compatibility with WP Typography
+* Fixed bug on Automatic Translation Settings page regarding API key
+
+= 2.0.4 =
+* Added support for translating aria-label attribute
+* Added possibility to exclude entire gettext domain from translation
+* Improved determining http/https when building links
+* Fixed automatic translation for custom languages
+* Added missing Swahili flag
+* Fixed flag for Tagalog language
+* Fixed some PHP notices and warnings
+
+= 2.0.3 =
+* Added compatibility with PHP 8
+* Added compatibility with Profile Builder Content Restriction redirect URL
+* Added compatibility with Paid Member Subscription Content Restriction redirect URL
+* Added filter to skip admin check on add_language_to_home_url
+* Fixed some cases of PHP errors
+
+= 2.0.2 =
+* Fixed WooCommerce permalink issues
+* Fixed notice about language switcher in Menus
+* Fixed missing translation text box for some strings in Translation Editor
+
+= 2.0.1 =
+* Added Advanced option to allow only manual translation for strings under specified selectors
+* Added support for using data-no-auto-translation attribute on html node to skip only automatic translation, not manual
+* Fixed date output for Dokan plugin
+* Fixed encoding of slugs with special characters in String translation interface
+
+= 2.0.0 =
+* Improved compatibility with WPBakery Page Builder and Wpresidence
+* Improved compatibility with integrations by initializing machine translator earlier
+* License key in TP settings is hidden now
+* Added filter trp_apply_gettext_early
+* Fixed high loading time when WP_DEBUG was set to true
+
+= 1.9.9 =
+* Forcing a slash at the end of home url is now an optional Advanced setting
+* Better handling of WPEngine long query limiting
+* Fixed some cases of adding language slugs to file paths
+* Fixed unprefixed DOM library constant
+* Fixed a notice coming from the Do not translate paths option
+
+= 1.9.8 =
+* Added compatibility with Google Site Kit plugin
+* Added compatibility with Ivory Search plugin and possibly others
+* Added visual feedback for inserting correct Automatic Translation API key
+* Added hooks when saving translations in Editor
+* Fixed notice in trp-ajax file
+
+= 1.9.7 =
+* Compatibility with Woocommerce Product Search plugin
+* Fixed some cases where JSON was broken in translated pages
+* Fixed issue with links containing translated taxonomy due to special characters
+* Fixed SQL errors in Slug Translation interface.
+* Fixed some cases with links on translated pages incorrectly pointing to the current page
+* Add filter for is_admin_link so plugins that hide the admin can work
+* Minor improvements to Slug Translation UI.
+
+= 1.9.6 =
+* Adding missing Uruguay flag
+* Improved security for dynamic translations
+* Disable automatic language redirect when editing a page with Oxygen or Beaver Builder
+* Fixed cases of missing table sql errors
+* Fixed sql error for some MariaDB setups due to deprecated syntax
+* Fixed some issues with Exclude certain paths functionality.
+
+= 1.9.5 =
+* Added setting that allows you to translate only certain paths or exclude certain paths from being translated.
+* Fixed some cases where GET parameters were lost from links in translated languages
+* WP Bakery integration that allow to include/exclude blocks for languages
+* Added a compatibility for the MyListing theme.
+* Load unsupported languages section only if an API key is saved.
+* Add support for AIO SEO sitemap detection
+
+= 1.9.4 =
+* Updated DOM parser to version 1.9.1, this should fix a bunch of broken HTML issues
+* Fixed a case in Woocommerce where slugs weren't translated from the seo-pack addon
+* Fixed share link in Elementor blockquote Tweet button
+* Fixed a possible issue with the search parameter being un-slashed
+
+= 1.9.3 =
+* Compatibility with WooCommerce Min/Max Quantities plugin that added an attribute data-quantity two times on a link
+* Added compatibility with Business Directory Plugin that was throwing 404
+* Fixed some cases of unnecessary calls to automatic translation API-s
+
+= 1.9.2 =
+* Fixed Norwegian language not working with Google Automatic Translation
+* Fixed loading localization text-domain in different language than expected.
+* Fixed gettext strings in incorrect language.
+* Fixed WooCommerce country and states translations.
+
+= 1.9.1 =
+* Fixing issue with WooCommerce slugs resulting in 404 if they were changed manually from the defaults in certain cases
+* Added a new cleanup option in settings
+* Fixed some issues with extra characters appearing on translated languages in certain conditions
+* Always load Beaver Builder in default language.
+
+= 1.9.0 =
+* Fixed some cases of multiple requests for finding out supported languages for automatic translation
+
+= 1.8.9 =
+* Fixing search in xStore theme ajax search
+* Fix edge cases of translation misalignment that caused some strings not to be translated and generated some notices
+* Fix some cases of displaying uppercase trp-gettext wrappers
+* Better handling of unsupported languages by automatic translation engine
+
+= 1.8.8 =
+* Improved compatibility with Oxygen builder.
+* Fixed a issue with pagination on blog page displaying page 0
+
+= 1.8.7 =
+* Added region independent languages in hreflang meta tags
+* Fixed JS error in Translation Editor for some type of anchor tags.
+* Compatibility with WooCommerce myPOS gateway. Improved PayPal IPN handling in WooCommerce.
+* Fixed issue with string in textarea being detected by our translation editor.
+* We now keep pagination when changing languages on the blog page.
+* Fixed a compatibility with xStore theme ajax search not appearing on other languages than english
+* Fixed an issue with Woocommerce links in language switcher
+* Compatibility with Woocommerce pdf Voucher plugin
+* Fixed an issue with archive pages pagination for terms with translated slugs
+* We now exclude some gettext strings from being translated that cause problems
+
+= 1.8.6 =
+* Added optional "Powered by TranslatePress" in the floater language switcher. Would help us out a lot if you would enable this option in the settings. Thank You!
+* Added a compatibility with Brizy Pro menu element
+* Add current-menu-item CSS class to menus on translation languages
+* Remove unused Delete command from String Translation
+* Added compatibility with woocommerce-ultimate-pdf-invoices plugin
+* Added compatibility with Uncode Theme menu on mobile
+* Fix the infinite redirect when using subfolder for default language with the default WP 5.5 sitemap.
+
 = 1.8.5 =
 * Improved SEO by making language switcher links crawlable
 * Fixed Internal links issue with Use a Subdirectory for the default language enabled

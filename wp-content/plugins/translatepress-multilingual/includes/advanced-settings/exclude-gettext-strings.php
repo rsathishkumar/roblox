@@ -34,11 +34,16 @@ function trp_exclude_strings ( $return, $translation, $text, $domain ){
 
 		foreach( $option['exclude_gettext_strings']['string'] as $key => $string ){
 
-			if( $text === $string ){
+            if((empty(trim($string))) && (trim($domain ) === trim( $option['exclude_gettext_strings']['domain'][$key]))){
+
+                return true;
+            }
+
+			if( trim( $text ) === trim( $string ) ){
 
 				if( empty( $option['exclude_gettext_strings']['domain'][$key] ) )
 					return true;
-				else if( $domain === $option['exclude_gettext_strings']['domain'][$key] )
+				else if( trim( $domain ) === trim( $option['exclude_gettext_strings']['domain'][$key] ) )
 					return true;
 
 			}

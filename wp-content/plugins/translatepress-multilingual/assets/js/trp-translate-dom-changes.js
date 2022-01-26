@@ -181,8 +181,10 @@ function TRP_Translator(){
             for (var i = 0; i < mutation.addedNodes.length; i++) {
                 var node = mutation.addedNodes[i]
                 /* if it is an anchor add the trp-edit-translation=preview parameter to it */
-                if ( _this.is_editor ) {
-                    jQuery(node).find('a').context.href = _this.update_query_string('trp-edit-translation', 'preview', jQuery(node).find('a').context.href);
+                if ( _this.is_editor ){
+                    var anchor_tags = jQuery(node).find('a')
+                    if ( typeof anchor_tags.context !== 'undefined' )
+                        anchor_tags.context.href = _this.update_query_string('trp-edit-translation', 'preview', anchor_tags.context.href);
                 }
 
                 if ( _this.skip_string(node) ){
@@ -193,6 +195,7 @@ function TRP_Translator(){
                 translateable = _this.get_translateable_textcontent( node )
                 string_originals = string_originals.concat( translateable.string_originals );
                 nodesInfo = nodesInfo.concat( translateable.nodesInfo );
+                skip_machine_translation = skip_machine_translation.concat( translateable.skip_machine_translation );
 
                 // Search for text inside attributes of newly added nodes
                 translateable = _this.get_translateable_attributes( node )
@@ -225,6 +228,17 @@ function TRP_Translator(){
     this.skip_string = function(node){
         // skip nodes containing these attributes
         var selectors = trp_data.trp_skip_selectors;
+        for (var i = 0; i < selectors.length ; i++ ){
+            if ( jQuery(node).closest( selectors[ i ] ).length > 0 ){
+                return true;
+            }
+        }
+        return false;
+    };
+
+    this.skip_string_from_auto_translation = function(node){
+        // nodes containing these attributes will not be automatically translated
+        var selectors = trp_data.trp_no_auto_translation_selectors;
         for (var i = 0; i < selectors.length ; i++ ){
             if ( jQuery(node).closest( selectors[ i ] ).length > 0 ){
                 return true;
@@ -282,6 +296,7 @@ function TRP_Translator(){
     this.get_translateable_textcontent = function( node ){
         var string_originals = [];
         var nodesInfo = [];
+        var skip_machine_translation = []
         if ( node.textContent && _this.trim( node.textContent.trim(), _this.except_characters ) != '' ) {
 
             var direct_string = get_string_from_node( node );
@@ -292,6 +307,9 @@ function TRP_Translator(){
                     if ( ! _this.skip_string_original( extracted_original, false )) {
                         nodesInfo.push({node: node, original: extracted_original, attribute: ''});
                         string_originals.push(extracted_original)
+                        if ( _this.skip_string_from_auto_translation(node)){
+                            skip_machine_translation.push( extracted_original )
+                        }
 
                         direct_string.textContent = '';
                         if (_this.is_editor) {
@@ -317,6 +335,9 @@ function TRP_Translator(){
                         if ( ! _this.skip_string_original( all_strings[j].textContent, false )) {
                             nodesInfo.push({node: all_strings[j], original: all_strings[j].textContent, attribute: ''});
                             string_originals.push(all_strings[j].textContent)
+                            if ( _this.skip_string_from_auto_translation(all_strings[j])){
+                                skip_machine_translation.push( all_strings[j].textContent )
+                            }
                             if (trp_data ['showdynamiccontentbeforetranslation'] == false) {
                                 all_strings[j].textContent = '';
                             }
@@ -325,7 +346,7 @@ function TRP_Translator(){
                 }
             }
         }
-        return { 'string_originals': string_originals, 'nodesInfo': nodesInfo };
+        return { 'string_originals': string_originals, 'nodesInfo': nodesInfo, 'skip_machine_translation': skip_machine_translation  };
     }
 
     this.get_translateable_attributes = function ( node ) {
@@ -352,13 +373,18 @@ function TRP_Translator(){
                         if ( attribute_content && _this.trim( attribute_content.trim(), _this.except_characters ) != '' ) {
                             nodesInfo.push({node: all_nodes[j], original: attribute_content, attribute: attribute_selector_item.accessor });
                             string_originals.push( attribute_content )
-                            if ( trp_data ['showdynamiccontentbeforetranslation'] == false && ( attribute_selector_item.accessor != 'src' ) ) {
+                            if ( trp_data ['showdynamiccontentbeforetranslation'] == false && ( attribute_selector_item.accessor != 'src' ) && ( attribute_selector_item.accessor != 'href' ) ) {
                                 all_nodes[j].setAttribute( attribute_selector_item.accessor, '' );
                             }
-                            for ( var s = 0; s < skip_attr_machine_translation.length; s++ ){
-                                if ( attribute_selector_item.accessor === skip_attr_machine_translation[s] ){
-                                    skip_machine_translation.push( attribute_content )
-                                    break
+
+                            if ( _this.skip_string_from_auto_translation(all_nodes[j])){
+                                skip_machine_translation.push( attribute_content )
+                            }else{
+                                for ( var s = 0; s < skip_attr_machine_translation.length; s++ ) {
+                                    if ( attribute_selector_item.accessor === skip_attr_machine_translation[ s ] ){
+                                        skip_machine_translation.push( attribute_content )
+                                        break
+                                    }
                                 }
                             }
                         }

@@ -28,7 +28,7 @@ class TRP_Editor_Api_Gettext_Strings {
 			if (isset($_POST['action']) && $_POST['action'] === 'trp_get_translations_gettext' && !empty($_POST['string_ids']) && !empty($_POST['language']) && in_array($_POST['language'], $this->settings['translation-languages'])) {
 				check_ajax_referer( 'gettext_get_translations', 'security' );
 				if (!empty($_POST['string_ids']))
-					$gettext_string_ids = json_decode(stripslashes($_POST['string_ids']));
+					$gettext_string_ids = json_decode(stripslashes($_POST['string_ids']));/* phpcs:ignore */ /* sanitized when inserting in db */
 				else
 					$gettext_string_ids = array();
 
@@ -116,8 +116,8 @@ class TRP_Editor_Api_Gettext_Strings {
 					}
 				}
 				$localized_text = $this->translation_manager->string_groups();
-				$dictionary_by_original = trp_sort_dictionary_by_original( $dictionaries, 'gettext', $localized_text['gettextstrings'], $_POST['language'] );
-				die( trp_safe_json_encode( $dictionary_by_original ) );
+				$dictionary_by_original = trp_sort_dictionary_by_original( $dictionaries, 'gettext', $localized_text['gettextstrings'], sanitize_text_field( $_POST['language'] ) );
+				die( trp_safe_json_encode( $dictionary_by_original ) );//phpcs:ignore
 
 			}
 		}
@@ -130,7 +130,7 @@ class TRP_Editor_Api_Gettext_Strings {
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX && current_user_can( apply_filters( 'trp_translating_capability', 'manage_options' ) ) ) {
 			if (isset($_POST['action']) && $_POST['action'] === 'trp_save_translations_gettext' && !empty($_POST['strings'])) {
 				check_ajax_referer( 'gettext_save_translations', 'security' );
-				$strings = json_decode(stripslashes($_POST['strings']));
+				$strings = json_decode(stripslashes($_POST['strings']));/* phpcs:ignore */ /* properly sanitized bellow */
 				$update_strings = array();
 				foreach ( $strings as $language => $language_strings ) {
 					if ( in_array( $language, $this->settings['translation-languages'] ) ) {
@@ -139,7 +139,7 @@ class TRP_Editor_Api_Gettext_Strings {
 							if ( isset( $string->id ) && is_numeric( $string->id ) ) {
 								array_push($update_strings[ $language ], array(
 									'id' => (int)$string->id,
-                                    'original' => trp_sanitize_string( $string->original ),
+                                    'original' => trp_sanitize_string( $string->original, false ),
 									'translated' => trp_sanitize_string( $string->translated ),
 									'domain' => sanitize_text_field( $string->domain ),
 									'status' => (int)$string->status
@@ -158,9 +158,11 @@ class TRP_Editor_Api_Gettext_Strings {
 					$this->trp_query->update_gettext_strings( $update_string_array, $language, array('id','translated', 'status') );
                     $this->trp_query->remove_possible_duplicates($update_string_array, $language, 'gettext');
 				}
+
+                do_action('trp_save_editor_translations_gettext_strings', $update_strings, $this->settings);
 			}
 		}
-		echo trp_safe_json_encode( array() );
+		echo trp_safe_json_encode( $update_strings );//phpcs:ignore
 		wp_die();
 	}
 }

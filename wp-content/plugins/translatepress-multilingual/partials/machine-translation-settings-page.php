@@ -14,7 +14,7 @@
                     </select>
 
                     <p class="description">
-                        <?php _e( 'Enable or disable the automatic translation of the site. To minimize translation costs, each untranslated string is automatically translated only once, then stored in the database.', 'translatepress-multilingual' ) ?>
+                        <?php esc_html_e( 'Enable or disable the automatic translation of the site. To minimize translation costs, each untranslated string is automatically translated only once, then stored in the database.', 'translatepress-multilingual' ) ?>
                     </p>
                 </td>
             </tr>
@@ -27,32 +27,71 @@
                     <?php foreach( $translation_engines as $engine ) : ?>
                         <label for="trp-translation-engine-<?= esc_attr( $engine['value'] ) ?>" style="margin-right:10px;">
                              <input type="radio" class="trp-translation-engine trp-radio" id="trp-translation-engine-<?= esc_attr( $engine['value'] ) ?>" name="trp_machine_translation_settings[translation-engine]" value="<?= esc_attr( $engine['value'] ) ?>" <?php checked( $this->settings['trp_machine_translation_settings']['translation-engine'], $engine['value'] ); ?>>
-                             <?= $engine['label'] ?>
+                             <?php echo esc_html( $engine['label'] ) ?>
                         </label>
                     <?php endforeach; ?>
 
                     <p class="description">
-                        <?php _e( 'Choose which engine you want to use in order to automatically translate your website.', 'translatepress-multilingual' ) ?>
+                        <?php esc_html_e( 'Choose which engine you want to use in order to automatically translate your website.', 'translatepress-multilingual' ) ?>
                     </p>
                 </td>
             </tr>
 
-            <?php if( !class_exists( 'TRP_DeepL' ) ) : ?>
+
+            <?php if( !class_exists( 'TRP_DeepL' ) && !class_exists( 'TRP_IN_DeepL' ) ) : ?>
                 <tr style="display:none;">
                     <th scope="row"></th>
                     <td>
                         <p class="trp-upsell-multiple-languages" id="trp-upsell-deepl">
+
                             <?php
-                                $url = trp_add_affiliate_id_to_link('https://translatepress.com/?utm_source=wpbackend&utm_medium=clientsite&utm_content=deepl_upsell&utm_campaign=tpfree');
-                                $lnk = sprintf( wp_kses( __( '<strong>DeepL</strong> automatic translation is available as a premium add-on in <a href="%s" class="button button-primary" target="_blank" title="TranslatePress Pro">TranslatePress PRO</a>', 'translatepress-multilingual' ), array( 'strong' => array(), 'br' => array(), 'a' => array( 'href' => array(), 'title' => array(), 'target'=> array(), 'class' => array() ) ) ), esc_url( $url ) );
-                                $lnk .= '<br/>' . __( 'By upgrading you\'ll get access to all paid add-ons, premium support and help fund the future development of TranslatePress.', 'translatepress-multilingual' );
-                                $lnk .= '<br/>' . __( 'Please note that DeepL API usage is paid separately. See <a href="https://www.deepl.com/pro.html#developer">DeepL pricing information</a>.', 'translatepress-multilingual' );
-                                echo $lnk;
+                            //link and message in case the user has the free version of TranslatePress
+                            if(( !class_exists('TRP_Handle_Included_Addons')) || (( defined('TRANSLATE_PRESS') && (TRANSLATE_PRESS !== 'TranslatePress - Developer' && TRANSLATE_PRESS !=='TranslatePress - Business' && TRANSLATE_PRESS !=='TranslatePress - Dev') )) ) :
+                                $url = trp_add_affiliate_id_to_link('https://translatepress.com/pricing/?utm_source=wpbackend&utm_medium=clientsite&utm_content=deepl_upsell&utm_campaign=tpfree');
+                                $message = __( '<strong>DeepL</strong> automatic translation is available as a <a href="%1$s" target="_blank" title="%2$s">%2$s</a>.', 'translatepress-multilingual' );
+                                $message_upgrade = __( 'By upgrading you\'ll get access to all paid add-ons, premium support and help fund the future development of TranslatePress.', 'translatepress-multilingual' );
+                                ?>
+                            <?php
+                            //link and message in case the user has the pro version of TranslatePress
+                                else:
+                                    $url = 'admin.php?page=trp_addons_page' ;
+                                $message = __( 'To use <strong>DeepL</strong> for automatic translation, activate this Pro add-on from the <a href="%1$s" target="_self" title="%2$s">%2$s</a>.', 'translatepress-multilingual' );
+                                $message_upgrade= "";
+                                    ?>
+                        <?php endif; ?>
+                        <?php
+                            if(empty($message_upgrade)) {
+                                $lnk = sprintf(
+                                // Translators: %1$s is the URL to the DeepL add-on. %2$s is the name of the Pro offerings.
+                                    $message, esc_url( $url ),
+                                    _x( 'Addons tab', 'Verbiage for the DeepL Pro Add-on', 'translatepress-multilingual' )
+                                );
+                            }else{
+                                $lnk = sprintf(
+                                // Translators: %1$s is the URL to the DeepL add-on. %2$s is the name of the Pro offerings.
+                                    $message, esc_url( $url ),
+                                    _x( 'TranslatePress Pro Add-on', 'Verbiage for the DeepL Pro Add-on', 'translatepress-multilingual' )
+                                );
+                            }
+
+                                if(!empty($message_upgrade)) {
+                                    $lnk .= '<br/><br />' . $message_upgrade;
+                                }
+                                $lnk .= '<br/><br />' . __( 'Please note that DeepL API usage is paid separately. See <a href="https://www.deepl.com/pro.html#developer">DeepL pricing information</a>.', 'translatepress-multilingual' );
+                                if(!empty($message_upgrade)) {
+                                    $lnk .= sprintf(
+                                        '<br /><br />' . '<a href="%1$s" class="button button-primary" target="_blank" title="%2$s">%2$s</a>',
+                                        esc_url( $url ),
+                                        __( 'TranslatePress Pro Add-ons', 'translatepress-multilingual' )
+                                    );
+                                }
+                                echo wp_kses_post( $lnk ); // Post kses for more generalized output that is more forgiving and has late escaping.
                             ?>
                         </p>
                     </td>
                 </tr>
             <?php endif; ?>
+
 
             <?php do_action ( 'trp_machine_translation_extra_settings_middle', $this->settings['trp_machine_translation_settings'] ); ?>
 
@@ -60,9 +99,9 @@
                 <tr id="trp-test-api-key">
                     <th scope="row"></th>
                     <td>
-                        <a href="<?php echo esc_url( admin_url( 'admin.php?page=trp_test_machine_api' ) ); ?>" class="button-secondary"><?php _e( 'Test API credentials', 'translatepress-multilingual' ); ?></a>
+                        <a href="<?php echo esc_url( admin_url( 'admin.php?page=trp_test_machine_api' ) ); ?>" class="button-secondary"><?php esc_html_e( 'Test API credentials', 'translatepress-multilingual' ); ?></a>
                         <p class="description">
-                            <?php _e( 'Click here to check if the selected translation engine is configured correctly.', 'translatepress-multilingual' ) ?>
+                            <?php esc_html_e( 'Click here to check if the selected translation engine is configured correctly.', 'translatepress-multilingual' ) ?>
                         </p>
                     </td>
                 </tr>
@@ -75,7 +114,7 @@
                 <td>
                     <label>
                         <input type=checkbox name="trp_machine_translation_settings[block-crawlers]" value="yes" <?php isset( $this->settings['trp_machine_translation_settings']['block-crawlers'] ) ? checked( $this->settings['trp_machine_translation_settings']['block-crawlers'], 'yes' ) : checked( '', 'yes' ); ?>>
-                        <?php _e( 'Yes' , 'translatepress-multilingual' ); ?>
+                        <?php esc_html_e( 'Yes' , 'translatepress-multilingual' ); ?>
                     </label>
                     <p class="description">
                         <?php esc_html_e( 'Block crawlers from triggering automatic translations on your website.', 'translatepress-multilingual' ); ?>
@@ -87,7 +126,7 @@
                <th scope="row"><?php esc_html_e( 'Limit machine translation / characters per day', 'translatepress-multilingual' ); ?></th>
                <td>
                    <label>
-                       <input type="number" name="trp_machine_translation_settings[machine_translation_limit]" value="<?php echo isset( $this->settings['trp_machine_translation_settings']['machine_translation_limit'] ) ? $this->settings['trp_machine_translation_settings']['machine_translation_limit'] : 1000000; ?>">
+                       <input type="number" name="trp_machine_translation_settings[machine_translation_limit]" value="<?php echo isset( $this->settings['trp_machine_translation_settings']['machine_translation_limit'] ) ? esc_attr( $this->settings['trp_machine_translation_settings']['machine_translation_limit'] ) : 1000000; ?>">
                    </label>
                    <p class="description">
                        <?php esc_html_e( 'Add a limit to the number of automatically translated characters so you can better budget your project.', 'translatepress-multilingual' ); ?>
@@ -98,8 +137,8 @@
             <tr>
                 <th scope="row"><?php esc_html_e( 'Today\'s character count:', 'translatepress-multilingual' ); ?></th>
                 <td>
-                    <strong><?php echo isset( $this->settings['trp_machine_translation_settings']['machine_translation_counter'] ) ? $this->settings['trp_machine_translation_settings']['machine_translation_counter'] : 0; ?></strong>
-                    (<?php echo isset( $this->settings['trp_machine_translation_settings']['machine_translation_counter_date'] ) ? $this->settings['trp_machine_translation_settings']['machine_translation_counter_date'] : date('Y-m-d'); ?>)
+                    <strong><?php echo isset( $this->settings['trp_machine_translation_settings']['machine_translation_counter'] ) ? esc_html( $this->settings['trp_machine_translation_settings']['machine_translation_counter'] ) : 0; ?></strong>
+                    (<?php echo isset( $this->settings['trp_machine_translation_settings']['machine_translation_counter_date'] ) ? esc_html( $this->settings['trp_machine_translation_settings']['machine_translation_counter_date'] ) : esc_html( date('Y-m-d') ); ?>)
                 </td>
             </tr>
 
@@ -108,7 +147,7 @@
                <td>
                    <label>
                        <input type=checkbox name="trp_machine_translation_settings[machine_translation_log]" value="yes" <?php isset( $this->settings['trp_machine_translation_settings']['machine_translation_log'] ) ? checked( $this->settings['trp_machine_translation_settings']['machine_translation_log'], 'yes' ) : checked( '', 'yes' ); ?>>
-                       <?php _e( 'Yes' , 'translatepress-multilingual' ); ?>
+                       <?php esc_html_e( 'Yes' , 'translatepress-multilingual' ); ?>
                    </label>
                    <p class="description">
                        <?php echo wp_kses( __( 'Only enable for testing purposes. Can impact performance.<br>All records are stored in the wp_trp_machine_translation_log database table. Use a plugin like <a href="https://wordpress.org/plugins/wp-data-access/">WP Data Access</a> to browse the logs or directly from your database manager (PHPMyAdmin, etc.)', 'translatepress-multilingual' ), array( 'br' => array(), 'a' => array( 'href' => array(), 'title' => array(), 'target' => array() ) ) ); ?>
@@ -119,6 +158,6 @@
             <?php do_action ( 'trp_machine_translation_extra_settings_bottom', $this->settings['trp_machine_translation_settings'] ); ?>
         </table>
 
-        <p class="submit"><input type="submit" class="button-primary" value="<?php esc_attr_e( 'Save Changes' ); ?>" /></p>
+        <p class="submit"><input type="submit" class="button-primary" value="<?php esc_attr_e( 'Save Changes', 'translatepress-multilingual' ); ?>" /></p>
     </form>
 </div>

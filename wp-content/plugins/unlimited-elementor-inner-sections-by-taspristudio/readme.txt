@@ -6,7 +6,8 @@ Author URI: https://taspristudio.com
 Contributors: taspristudio, robin-islam
 Tags: elementor, elementor-addon, elementor-unlimited-inner-section
 Requires at least: 4.7
-Tested up to: 5.4
+Tested up to: 5.8
+Stable tag: 5.7.2
 Stable tag: trunk
 Requires PHP: 5.4
 License: GPLv2 or later  

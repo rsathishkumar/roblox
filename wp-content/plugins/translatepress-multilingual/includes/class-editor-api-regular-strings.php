@@ -30,9 +30,9 @@ class TRP_Editor_Api_Regular_Strings {
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
 			check_ajax_referer( 'get_translations', 'security' );
 			if ( isset( $_POST['action'] ) && $_POST['action'] === 'trp_get_translations_regular' && !empty( $_POST['language'] ) && in_array( $_POST['language'], $this->settings['translation-languages'] ) ) {
-				$originals = (empty($_POST['originals']) )? array() : json_decode(stripslashes($_POST['originals']));
-				$skip_machine_translation = (empty($_POST['skip_machine_translation']) )? array() : json_decode(stripslashes($_POST['skip_machine_translation']));
-				$ids = (empty($_POST['string_ids']) )? array() : json_decode(stripslashes($_POST['string_ids']));
+				$originals = (empty($_POST['originals']) )? array() : json_decode(stripslashes($_POST['originals'])); /* phpcs:ignore */ /* sanitized downstream */
+				$skip_machine_translation = (empty($_POST['skip_machine_translation']) )? array() : json_decode(stripslashes($_POST['skip_machine_translation'])); /* phpcs:ignore */ /* sanitized downstream */
+				$ids = (empty($_POST['string_ids']) )? array() : json_decode(stripslashes($_POST['string_ids'])); /* phpcs:ignore */ /* sanitized downstream */
 				if ( is_array( $ids ) || is_array( $originals) ) {
 					$trp = TRP_Translate_Press::get_trp_instance();
 					if (!$this->trp_query) {
@@ -49,9 +49,9 @@ class TRP_Editor_Api_Regular_Strings {
 					if ( isset( $_POST['dynamic_strings'] ) && $_POST['dynamic_strings'] === 'true'  ){
 						$string_group = $localized_text['dynamicstrings'];
 					}
-					$dictionary_by_original = trp_sort_dictionary_by_original( $dictionaries, 'regular', $string_group, $_POST['language'] );
+					$dictionary_by_original = trp_sort_dictionary_by_original( $dictionaries, 'regular', $string_group, sanitize_text_field( $_POST['language'] ) );
 
-					echo trp_safe_json_encode( $dictionary_by_original );
+					echo trp_safe_json_encode( $dictionary_by_original );//phpcs:ignore
 				}
 			}
 		}
@@ -89,7 +89,7 @@ class TRP_Editor_Api_Regular_Strings {
 		}
 		foreach( $originals as $original ){
 			if ( isset( $original ) ) {
-				$trimmed_string = trp_full_trim( trp_sanitize_string( $original ) );
+				$trimmed_string = trp_full_trim( trp_sanitize_string( $original, false ) );
 				if ( ( filter_var($trimmed_string, FILTER_VALIDATE_URL) === false) ){
 					// not url
 					$original_array[] = $trimmed_string;
@@ -103,7 +103,7 @@ class TRP_Editor_Api_Regular_Strings {
 			}
 		}
 
-		$current_language = sanitize_text_field( $_POST['language'] );
+		$current_language = isset( $_POST['language'] ) ? sanitize_text_field( $_POST['language'] ) : '';
 
 
 		// necessary in order to obtain all the original strings
@@ -182,11 +182,11 @@ class TRP_Editor_Api_Regular_Strings {
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX && current_user_can( apply_filters( 'trp_translating_capability', 'manage_options' ) ) ) {
 			check_ajax_referer( 'save_translations', 'security' );
 			if ( isset( $_POST['action'] ) && $_POST['action'] === 'trp_save_translations_regular' && !empty( $_POST['strings'] ) ) {
-				$strings = json_decode(stripslashes($_POST['strings']));
-				$this->save_translations_of_strings( $strings );
+				$strings = json_decode(stripslashes($_POST['strings'])); /* phpcs:ignore */ /* sanitized downstream */
+				$update_strings = $this->save_translations_of_strings( $strings );
 			}
 		}
-		echo trp_safe_json_encode( array() );
+		echo trp_safe_json_encode( $update_strings ); // phpcs:ignore
 		die();
 	}
 
@@ -215,7 +215,7 @@ class TRP_Editor_Api_Regular_Strings {
 						}
 						array_push($update_strings[ $language ], array(
 							'id' => (int)$string->id,
-							'original' => trp_sanitize_string( $string->original ),
+							'original' => trp_sanitize_string( $string->original, false ),
 							'translated' => trp_sanitize_string( $string->translated ),
 							'status' => (int)$string->status,
 							'block_type' => (int)$string->block_type
@@ -235,7 +235,10 @@ class TRP_Editor_Api_Regular_Strings {
 			$this->trp_query->update_strings( $update_string_array, $language, array('id','translated', 'status', 'block_type'));
 			$this->trp_query->remove_possible_duplicates($update_string_array, $language, 'regular');
 		}
-		
+
+        do_action('trp_save_editor_translations_regular_strings', $update_strings, $this->settings);
+
+		return $update_strings;
 	}
 
 	/**
@@ -248,7 +251,7 @@ class TRP_Editor_Api_Regular_Strings {
 		if ( defined( 'DOING_AJAX' ) && DOING_AJAX && current_user_can( apply_filters( 'trp_translating_capability', 'manage_options' ) ) ) {
 			check_ajax_referer( 'merge_translation_block', 'security' );
 			if ( isset( $_POST['action'] ) && $_POST['action'] === 'trp_create_translation_block' && !empty( $_POST['strings'] ) && !empty( $_POST['language'] ) && in_array( $_POST['language'], $this->settings['translation-languages'] ) && !empty( $_POST['original'] ) ) {
-				$strings = json_decode( stripslashes( $_POST['strings'] ) );
+				$strings = json_decode( stripslashes( $_POST['strings'] ) ); /* phpcs:ignore */ /* sanitized downstream */
 
 				if ( isset ( $this->settings['translation-languages']) ){
 					$trp = TRP_Translate_Press::get_trp_instance();
@@ -262,7 +265,7 @@ class TRP_Editor_Api_Regular_Strings {
 					$active_block_type = $this->trp_query->get_constant_block_type_active();
 					foreach( $this->settings['translation-languages'] as $language ){
 						if ( $language != $this->settings['default-language'] ){
-							$dictionaries = $this->get_translation_for_strings( array(), array( stripslashes( $_POST['original'] ) ), $active_block_type, array() );
+							$dictionaries = $this->get_translation_for_strings( array(), array( stripslashes( $_POST['original'] ) ), $active_block_type, array() );/* phpcs:ignore */ /* sanitized downstream */
 							break;
 						}
 					}
@@ -285,7 +288,7 @@ class TRP_Editor_Api_Regular_Strings {
 								$ajax_translated_string_list = $strings->$language;
 
 								foreach( $ajax_translated_string_list as $ajax_key => $ajax_string ) {
-									if ( trp_full_trim( trp_sanitize_string( $ajax_string->original ) ) == $dictionary_string->original ) {
+									if ( trp_full_trim( trp_sanitize_string( $ajax_string->original, false ) ) == $dictionary_string->original ) {
 										if ( $ajax_string->translated != '' ) {
 											$dictionaries[ $language ][ $dictionary_string_key ]->translated = trp_sanitize_string( $ajax_string->translated );
 											$dictionaries[ $language ][ $dictionary_string_key ]->status     = (int) $ajax_string->status;
@@ -329,7 +332,7 @@ class TRP_Editor_Api_Regular_Strings {
 							}
 						}
 
-						echo trp_safe_json_encode( $dictionaries );
+						echo trp_safe_json_encode( $dictionaries );//phpcs:ignore
 					}
 				}
 
@@ -350,7 +353,7 @@ class TRP_Editor_Api_Regular_Strings {
             check_ajax_referer( 'split_translation_block', 'security' );
 
 			if ( isset( $_POST['action'] ) && $_POST['action'] === 'trp_split_translation_block' && ! empty( $_POST['strings'] ) ) {
-                $raw_original_array = json_decode( stripslashes( $_POST['strings'] ) );
+                $raw_original_array = json_decode( stripslashes( $_POST['strings'] ) ); /* phpcs:ignore */ /* sanitized downstream */
 				$trp = TRP_Translate_Press::get_trp_instance();
 				if ( ! $this->trp_query ) {
 					$this->trp_query = $trp->get_component( 'query' );
@@ -358,7 +361,7 @@ class TRP_Editor_Api_Regular_Strings {
 				$deprecated_block_type = $this->trp_query->get_constant_block_type_deprecated();
 				$originals = array();
 				foreach( $raw_original_array as $original ){
-					$originals[] = trp_sanitize_string( $original );
+					$originals[] = trp_sanitize_string( $original, false );
 				}
 
 				// even inactive languages ( not in $this->settings['translation-languages'] array ) will be updated

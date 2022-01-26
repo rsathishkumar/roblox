@@ -11,9 +11,11 @@ class TRP_Query{
     protected $table_name;
     public $db;
     protected $settings;
+    protected $url_converter;
     protected $translation_render;
     protected $error_manager;
     protected $tables_exist = array();
+    protected $db_sql_version = null;
 
     const NOT_TRANSLATED = 0;
     const MACHINE_TRANSLATED = 1;
@@ -65,7 +67,7 @@ class TRP_Query{
         }else {
 	        $and_block_type = " AND block_type = " . $block_type;
         }
-        $query = "SELECT original,translated, status FROM `" . sanitize_text_field( $this->get_table_name( $language_code ) ) . "` WHERE status != " . self::NOT_TRANSLATED . $and_block_type . " AND original IN ";
+        $query = "SELECT original,translated, status FROM `" . sanitize_text_field( $this->get_table_name( $language_code ) ) . "` WHERE status != " . self::NOT_TRANSLATED . $and_block_type . " AND translated <>'' AND original IN ";
 
         $placeholders = array();
         $values = array();
@@ -521,7 +523,7 @@ class TRP_Query{
                                     meta_id bigint(20) AUTO_INCREMENT NOT NULL PRIMARY KEY,
                                     original_id bigint(20) NOT NULL,
                                     meta_key varchar(255),
-                                    meta_value longtext,                                    
+                                    meta_value longtext,
                                     UNIQUE KEY meta_id (meta_id) )
                                      $charset_collate;";
             require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
@@ -655,11 +657,12 @@ class TRP_Query{
 		}
 
 		$on_duplicate = ' ON DUPLICATE KEY UPDATE ';
+		$key_term_values = $this->is_values_accepted() ? 'VALUES' : 'VALUE';
 		foreach ( $columns_to_update as $column ) {
 			if ( $column == 'id' ){
 				continue;
 			}
-			$on_duplicate .= $column . '=VALUES(' . $column . '),';
+			$on_duplicate .= $column . '=' . $key_term_values . '(' . $column . '),';
 		}
 		$query .= implode( ', ', $place_holders );
 
@@ -795,11 +798,12 @@ class TRP_Query{
         }
 
 	    $on_duplicate = ' ON DUPLICATE KEY UPDATE ';
+        $key_term_values = $this->is_values_accepted() ? 'VALUES' : 'VALUE';
 	    foreach ( $columns_to_update as $column ) {
 		    if ( $column == 'id' ){
 			    continue;
 		    }
-		    $on_duplicate .= $column . '=VALUES(' . $column . '),';
+            $on_duplicate .= $column . '=' . $key_term_values . '(' . $column . '),';
 	    }
 	    $query .= implode( ', ', $place_holders );
 
@@ -1110,7 +1114,7 @@ class TRP_Query{
 		}
 
 		$placeholders = "( " . implode ( ", ", $placeholders ) . " )";
-		$query = 'UPDATE `' . implode( $table_names, '`, `' ) . '` SET `' . implode( $table_names, '`.block_type=' . $block_type . ', `' ) . '`.block_type=' . $block_type . ' WHERE `' . implode( $table_names, '`.original IN ' . $placeholders . ' AND `' ) . '`.original IN ' . $placeholders ;
+		$query = 'UPDATE `' . implode( '`, `', $table_names ) . '` SET `' . implode( '`.block_type=' . $block_type . ', `', $table_names ) . '`.block_type=' . $block_type . ' WHERE `' . implode( '`.original IN ' . $placeholders . ' AND `', $table_names ) . '`.original IN ' . $placeholders ;
 
 		return $this->db->query( $this->db->prepare( $query, $values ) );
 	}
@@ -1125,11 +1129,20 @@ class TRP_Query{
 	 *
 	 * @param $table
 	 */
-	public function remove_duplicate_rows_in_dictionary_table( $language_code, $batch ){
+	public function remove_duplicate_rows_in_dictionary_table( $language_code, $inferior_limit, $batch_size ) {
 		$table_name = $this->get_table_name( $language_code );
-        $query = $this->get_remove_identical_duplicates_query($table_name, $batch, 'regular' );
-		return $this->db->query( $query );
-	}
+        if ($this->table_exists($table_name)) {
+            $last_id = $this->get_last_id( $table_name );
+            $query = $this->get_remove_identical_duplicates_query( $table_name, $inferior_limit, 'regular' );
+            $this->db->query( $query );
+            if ( $inferior_limit > $last_id ) {
+                return true;
+            }
+            return false;
+        }else{
+            return true;
+        }
+    }
 
     /**
      * Removes duplicate rows of gettext strings table
@@ -1139,10 +1152,25 @@ class TRP_Query{
      *
      * @param $table
      */
-	public function remove_duplicate_rows_in_gettext_table( $language_code, $batch ){
+    /**
+     * @param $language_code
+     * @param $inferior_limit 1000, 2000
+     * @param $batch_size
+     * @return bool|int
+     */
+	public function remove_duplicate_rows_in_gettext_table( $language_code, $inferior_limit, $batch_size ){
         $table_name = $this->get_gettext_table_name( $language_code );
-        $query = $this->get_remove_identical_duplicates_query($table_name, $batch, 'gettext' );
-        return $this->db->query( $query );
+        if ($this->table_exists($table_name)) {
+            $last_id = $this->get_last_id( $table_name );
+            $query = $this->get_remove_identical_duplicates_query( $table_name, $inferior_limit, 'gettext' );
+            $this->db->query( $query );
+            if ( $inferior_limit > $last_id ) {
+                return true;
+            }
+            return false;
+        }else{
+            return true;
+        }
     }
 
     /**
@@ -1152,7 +1180,7 @@ class TRP_Query{
      * @param $type string possible values are 'regular' or 'gettext'
      * @return string
      */
-    private function get_remove_identical_duplicates_query( $table_name, $batch, $type ){
+    private function get_remove_identical_duplicates_query( $table_name, $inferior_limit, $type ){
         $charset_collate = $this->db->get_charset_collate();
         $charset = "utf8mb4";
         if( strpos( 'latin1', $charset_collate ) === 0 )
@@ -1164,10 +1192,10 @@ class TRP_Query{
 					    ' . $table_name . ' AS `b`
 					WHERE
 					    -- IMPORTANT: Ensures one version remains
-					    `a`.ID < ' . $batch . ' 
-					    AND `b`.ID < ' . $batch . ' 
+					    `a`.ID < ' . $inferior_limit . '
+					    AND `b`.ID < ' . $inferior_limit . '
 					    AND `a`.`ID` < `b`.`ID`
-					
+
 					    -- Check for all duplicates. Binary ensure case sensitive comparison
 					    AND (`a`.`original` COLLATE '.$charset.'_bin = `b`.`original` OR `a`.`original` IS NULL AND `b`.`original` IS NULL)
 					    AND (`a`.`translated` COLLATE '.$charset.'_bin = `b`.`translated` OR `a`.`translated` IS NULL AND `b`.`translated` IS NULL)
@@ -1185,10 +1213,14 @@ class TRP_Query{
 	 *
 	 * Only the original with translation remains
 	 */
-	public function remove_untranslated_strings_if_translation_available( $language_code ){
+	public function remove_untranslated_strings_if_translation_available( $language_code, $inferior_limit, $batch_size ){
 		$table_name = $this->get_table_name( $language_code );
-		$query = $this->get_remove_untranslated_duplicates_query( $table_name, 'regular' );
-		return $this->db->query( $query );
+
+        if ($this->table_exists($table_name)) {
+            $query = $this->get_remove_untranslated_duplicates_query( $table_name, 'regular' );
+            $this->db->query( $query );
+        }
+        return true;
 	}
 
     /**
@@ -1196,10 +1228,14 @@ class TRP_Query{
      *
      * Only the original with translation remains
      */
-    public function remove_untranslated_strings_if_gettext_translation_available( $language_code ){
+    public function remove_untranslated_strings_if_gettext_translation_available( $language_code, $inferior_limit, $batch_size ){
         $table_name = $this->get_gettext_table_name( $language_code );
-        $query = $this->get_remove_untranslated_duplicates_query( $table_name, 'gettext' );
-        return $this->db->query( $query );
+
+        if ($this->table_exists($table_name)) {
+            $query = $this->get_remove_untranslated_duplicates_query( $table_name, 'gettext' );
+            $this->db->query( $query );
+        }
+        return true;
     }
 
     /**
@@ -1231,11 +1267,91 @@ class TRP_Query{
         return $query;
     }
 
-	/*
-	 * Get last inserted ID for this table
-	 *
-	 * Useful for optimizing database by removing duplicate rows
-	 */
+
+    /**
+     * Removes CDATA from original and dictionary tables.
+     * @param $language_code
+     * @param $inferior_limit
+     * @param $batch_size
+     * @return bool
+     */
+    public function remove_cdata_in_original_and_dictionary_tables($language_code, $inferior_limit, $batch_size){
+
+        if ($language_code == $this->settings['default-language']){
+            $table_name = $this->get_table_name_for_original_strings();
+            $query = $this->get_remove_cdata_query($table_name, $batch_size);
+
+            $rows_affected = $this->db->query( $query );
+            if ( $rows_affected > 0 ) {
+                return false;
+            }else{
+                return true;
+            }
+        }
+        $table_name = $this->get_table_name( $language_code );
+        if ($this->table_exists($table_name)) {
+            $query = $this->get_remove_cdata_query($table_name, $batch_size);
+            $rows_affected = $this->db->query( $query );
+            if ( $rows_affected > 0 ) {
+                return false;
+            }else{
+                return true;
+            }
+        }else{
+            return true;
+        }
+    }
+
+    /**
+     * @param $table_name
+     * @param $batch_size
+     * @return string
+     */
+    private function get_remove_cdata_query( $table_name, $batch_size ){
+
+        $query = "DELETE FROM " . $table_name . " WHERE original LIKE '<![CDATA[%' LIMIT " . $batch_size;
+
+        return $query;
+    }
+
+    /**
+     * Removes untranslated links from the dictionary table
+     * @param $language_code
+     * @param $inferior_limit
+     * @param $batch_size
+     * @return bool
+     */
+    public function remove_untranslated_links_in_dictionary_table($language_code, $inferior_limit, $batch_size){
+        $table_name = $this->get_table_name( $language_code );
+        if ($this->table_exists($table_name)) {
+            $query = $this->get_remove_untranslated_links_query($table_name, $batch_size);
+            $rows_affected = $this->db->query( $query );
+            if ( $rows_affected > 0 ) {
+                return false;
+            }else{
+                return true;
+            }
+        }else{
+            return true;
+        }
+    }
+
+    /**
+     * @param $table_name
+     * @return $query
+     */
+    private function get_remove_untranslated_links_query($table_name, $batch_size){
+
+        $query = "DELETE FROM " . $table_name . " WHERE original LIKE 'http%' AND (translated = '' OR translated IS NULL) LIMIT " . $batch_size;
+
+        return $query;
+    }
+
+    /*
+     * Get last inserted ID for this table
+     *
+     * Useful for optimizing database by removing duplicate rows
+     */
 	public function get_last_id( $table_name ){
 		$last_id = $this->db->get_var("SELECT MAX(id) FROM " . $table_name );
 		return $last_id;
@@ -1281,13 +1397,18 @@ class TRP_Query{
 
 	public function maybe_record_automatic_translation_error($error_details = array(), $ignore_last_error = false ){
         if ( !empty( $this->db->last_error) || $ignore_last_error ){
+            $trp = TRP_Translate_Press::get_trp_instance();
             if( !$this->error_manager ){
-                $trp = TRP_Translate_Press::get_trp_instance();
                 $this->error_manager = $trp->get_component( 'error_manager' );
             }
+            if( !$this->url_converter ) {
+                $this->url_converter = $trp->get_component( 'url_converter' );
+            }
+
             $default_error_details = array(
                 'last_error'  => $this->db->last_error,
-                'disable_automatic_translations' => true
+                'disable_automatic_translations' => true,
+                'url' => $this->url_converter->cur_page_url(),
             );
             $error_details = array_merge( $default_error_details, $error_details );
             $this->error_manager->record_error( $error_details );
@@ -1346,8 +1467,117 @@ class TRP_Query{
             $place_holders[] = "(original COLLATE " . $charset . "_bin = '%s' " . $domain . "AND id != '%d'  )";
         }
 
-        $sql = "DELETE FROM `" . sanitize_text_field( $table_name ). "` WHERE " . implode( $place_holders, " OR " );
+        $sql = "DELETE FROM `" . sanitize_text_field( $table_name ). "` WHERE " . implode( " OR ", $place_holders );
         $query = $this->db->prepare( $sql, $values );
         return $this->db->query( $query );
+    }
+
+    public function rename_originals_table(){
+        $new_table_name = sanitize_text_field( $this->get_table_name_for_original_strings() . time() );
+        $this->db->query( "ALTER TABLE " . $this->get_table_name_for_original_strings() . " RENAME TO " . $new_table_name );
+
+        $table_to_use_for_recovery = get_option('trp_original_strings_table_for_recovery', '');
+        if ( $table_to_use_for_recovery == '' ) {
+            // if a previous run of removing original strings duplicates failed, use the old table, not the one created during that failed time
+            update_option( 'trp_original_strings_table_for_recovery', $new_table_name );
+        }
+    }
+
+    public function regenerate_original_meta_table($inferior_limit, $batch_size){
+
+        if( !$this->error_manager ){
+            $trp = TRP_Translate_Press::get_trp_instance();
+            $this->error_manager = $trp->get_component( 'error_manager' );
+        }
+
+        $originals_table = $this->get_table_name_for_original_strings();
+        $recovery_originals_table = sanitize_text_field( get_option( 'trp_original_strings_table_for_recovery' ) );
+        $originals_meta_table = $this->get_table_name_for_original_meta();
+        if ( empty( $recovery_originals_table ) ){
+            $this->error_manager->record_error(array('regenerate_original_meta_table' => 'Empty option trp_original_strings_table_for_recovery'));
+            return;
+        }
+
+        $this->db->query( $this->db->prepare("UPDATE `$originals_meta_table` trp_meta INNER JOIN `$recovery_originals_table` trp_old ON trp_meta.original_id = trp_old.id LEFT JOIN `$originals_table` trp_new ON trp_new.original = trp_old.original set trp_meta.original_id = IF(trp_new.id IS NULL, 0, trp_new.id) WHERE trp_meta.meta_id > %d AND trp_meta.meta_id <= %d AND trp_new.id != trp_old.id", $inferior_limit, ($inferior_limit + $batch_size) ) );
+
+        /* UPDATE `wp_trp_original_meta` trp_meta INNER JOIN `wp_trp_original_strings1608214654` as trp_old ON trp_meta.original_id = trp_old.id
+         * LEFT JOIN `wp_trp_original_strings` as trp_new on trp_new.original = trp_old.original  set trp_meta.original_id = IF(trp_new.id IS NULL, 0, trp_new.id)
+         * WHERE trp_meta.meta_id > 10 AND trp_meta.meta_id <= 33 AND trp_new.id != trp_old.id*/
+
+        if (!empty($this->db->last_error)) {
+            $this->error_manager->record_error(array('last_error_regenerate_original_meta_table' => $this->db->last_error));
+        }
+    }
+
+    public function clean_original_meta( $limit ){
+        $limit = (int) $limit;
+        $sql = "DELETE FROM `" . sanitize_text_field( $this->get_table_name_for_original_meta() ). "` WHERE original_id = 0 LIMIT " . $limit;
+        return $this->db->query( $sql );
+    }
+
+    public function drop_table($table_name){
+        $sql = "DROP TABLE `" . sanitize_text_field( $table_name ). "`";
+        return $this->db->query( $sql );
+    }
+
+    /**
+     * Return db sql version
+     *
+     * Using 'select version()' instead of wpdb->db_server_info because
+     * db_server_info returns format 5.5.5-10.3.3-mariadb instead of 10.3.3-mariadb on some setups
+     * https://www.php.net/manual/en/mysqli.get-server-info.php#118822
+     *
+     * @return string|null
+     */
+    public function get_db_sql_version(){
+        if ( $this->db_sql_version === null ){
+            $this->db_sql_version = $this->db->get_var( 'select version()' );
+            $this->db_sql_version = ( $this->db_sql_version === null ) ? '0' : $this->db_sql_version;
+        }
+        return $this->db_sql_version;
+    }
+
+    /**
+     * Whether it is safe to use VALUES() instead of VALUE()
+     *
+     * Starting with 10.3.3 MariaDB recommends using VALUE() instead of VALUES()
+     * Even though they say they still accept the term values for 'on duplicate key update' syntax,
+     * some users still report syntax error.
+     * https://mariadb.com/kb/en/values-value/
+     *
+     * MySQL servers marked the use of VALUES deprecated starting with 8.0.20 but have not removed support for it.
+     * We can't use the MariaDB approach, their alternative is different and not supported by earlier versions.
+     * For now, there is no need to further complicate this SQL query based on DB version and make.
+     *
+     *
+     * @return bool
+     */
+    public function is_values_accepted(){
+        $return = true;
+        $db_sql_version = strtolower( $this->get_db_sql_version() );
+        if ( strpos( $db_sql_version, 'mariadb' ) !== false ){
+            $db_server_array = explode('-', $db_sql_version);
+            if( isset( $db_server_array[1] ) && $db_server_array[1] == 'mariadb' && version_compare($db_server_array[0], '10.3.3', '>=') ){
+                $return = false;
+            }
+        }
+        return apply_filters('trp_is_sql_values_accepted', $return );
+    }
+
+    /**
+     * Return true if the dictionary table of $language has at least $minimum_rows with $status
+     *
+     * @param $language
+     * @param $minimum_rows
+     * @param $status
+     *
+     * @return bool
+     */
+    public function minimum_rows_with_status( $language, $minimum_rows, $status ) {
+        $minimum_rows = (int) $minimum_rows;
+        $status = (int) $status;
+
+        $sql = "SELECT (COUNT(*) > " . $minimum_rows . ") FROM `" . sanitize_text_field( $this->get_table_name( $language ) ). "` WHERE status = " . $status;
+        return $this->db->get_var( $sql );
     }
 }
