@@ -39,13 +39,6 @@ class WPSEO_Sitemaps_Renderer {
 	protected $needs_conversion = false;
 
 	/**
-	 * The date helper.
-	 *
-	 * @var WPSEO_Date_Helper
-	 */
-	protected $date;
-
-	/**
 	 * Set up object properties.
 	 */
 	public function __construct() {
@@ -53,7 +46,6 @@ class WPSEO_Sitemaps_Renderer {
 		$this->stylesheet     = '<?xml-stylesheet type="text/xsl" href="' . esc_url( $stylesheet_url ) . '"?>';
 		$this->charset        = get_bloginfo( 'charset' );
 		$this->output_charset = $this->charset;
-		$this->date           = new WPSEO_Date_Helper();
 
 		if (
 			$this->charset !== 'UTF-8'
@@ -138,12 +130,11 @@ class WPSEO_Sitemaps_Renderer {
 	/**
 	 * Produce final XML output with debug information.
 	 *
-	 * @param string  $sitemap   Sitemap XML.
-	 * @param boolean $transient Transient cache flag.
+	 * @param string $sitemap   Sitemap XML.
 	 *
 	 * @return string
 	 */
-	public function get_output( $sitemap, $transient ) {
+	public function get_output( $sitemap ) {
 
 		$output = '<?xml version="1.0" encoding="' . esc_attr( $this->output_charset ) . '"?>';
 
@@ -192,7 +183,7 @@ class WPSEO_Sitemaps_Renderer {
 		$date = null;
 
 		if ( ! empty( $url['lastmod'] ) ) {
-			$date = $this->date->format( $url['lastmod'] );
+			$date = YoastSEO()->helpers->date->format( $url['lastmod'] );
 		}
 
 		$url['loc'] = htmlspecialchars( $url['loc'], ENT_COMPAT, $this->output_charset, false );
@@ -221,7 +212,7 @@ class WPSEO_Sitemaps_Renderer {
 
 		if ( ! empty( $url['mod'] ) ) {
 			// Create a DateTime object date in the correct timezone.
-			$date = $this->date->format( $url['mod'] );
+			$date = YoastSEO()->helpers->date->format( $url['mod'] );
 		}
 
 		$url['loc'] = htmlspecialchars( $url['loc'], ENT_COMPAT, $this->output_charset, false );
@@ -316,7 +307,7 @@ class WPSEO_Sitemaps_Renderer {
 
 			parse_str( $query, $parsed_query );
 
-			$parsed_query = http_build_query( $parsed_query, null, '&amp;', PHP_QUERY_RFC3986 );
+			$parsed_query = http_build_query( $parsed_query, '', '&amp;', PHP_QUERY_RFC3986 );
 
 			$url = str_replace( $query, $parsed_query, $url );
 		}
