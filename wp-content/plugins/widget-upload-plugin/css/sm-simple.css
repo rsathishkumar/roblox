@@ -1,0 +1,402 @@
+#main-nav {
+  display:block;
+}
+.sm-simple a .sub-arrow:nth-child(2) {
+  display:none;
+}
+.elementor-nav-menu ul {
+  padding: 10px 0px;
+}
+.sm-simple a, .sm-simple a:hover, .sm-simple a:focus, .sm-simple a:active {
+  padding: 13px 20px;
+  /* make room for the toggle button (sub indicator) */
+  color: #555555;
+  font-family: "Lucida Sans Unicode", "Lucida Sans", "Lucida Grande", Arial, sans-serif;
+  font-size: 16px;
+  font-weight: normal;
+  line-height: 17px;
+  text-decoration: none;
+}
+.sm-simple a.disabled {
+  color: #cccccc;
+}
+.sm-simple a .sub-arrow {
+  top: 50%;
+  left: auto;
+  right: 4px;
+  width: 34px;
+  height: 34px;
+  overflow: hidden;
+  text-align: center;
+  text-shadow: none;
+  background: rgba(0, 0, 0, 0.08);
+  visibility: hidden;
+}
+
+.elementor-nav-menu--indicator-plus .sm-simple a .sub-arrow::before {
+  content: '+';
+  visibility: visible;
+}
+.elementor-nav-menu--indicator-classic .sm-simple a .sub-arrow::before {
+  content: "\f107";
+  font-family: "Font Awesome 5 Free";
+  visibility: visible;
+}
+.elementor-nav-menu--indicator-chevron .sm-simple a .sub-arrow::before {
+  content: "\f078";
+  font-family: "Font Awesome 5 Free";
+  visibility: visible;
+}
+.elementor-nav-menu--indicator-angle .sm-simple a .sub-arrow::before {
+  content: "\f0d7";
+  font-family: "Font Awesome 5 Free";
+  visibility: visible;
+}
+
+.elementor-nav-menu--indicator-plus .sm-simple a.highlighted .sub-arrow::before {
+  content: '-';
+}
+.elementor-nav-menu--indicator-classic .sm-simple a.highlighted .sub-arrow::before {
+  content: "\f106";
+  font-family: "Font Awesome 5 Free";
+}
+.elementor-nav-menu--indicator-chevron .sm-simple a.highlighted .sub-arrow::before {
+  content: "\f077";
+  font-family: "Font Awesome 5 Free";
+}
+.elementor-nav-menu--indicator-angle .sm-simple a.highlighted .sub-arrow::before {
+  content: "\f0d8";
+  font-family: "Font Awesome 5 Free";
+}
+
+.sm-simple ul a, .sm-simple ul a:hover, .sm-simple ul a:focus, .sm-simple ul a:active {
+  font-size: 14px;
+  border-left: 8px solid transparent;
+}
+
+.elementor-nav-menu a {
+  position: relative;
+}
+
+.elementor-nav-menu li {
+  position: unset;
+}
+@media (min-width: 1025px) {
+  /* Switch to desktop layout
+  -----------------------------------------------
+     These transform the menu tree from
+     collapsible to desktop (navbar + dropdowns)
+  -----------------------------------------------*/
+  /* start... (it's not recommended editing these rules) */
+  .sm-simple ul {
+    position: absolute;
+  }
+
+  .sm-simple li {
+    display: inline-block !important;
+  }
+
+  .sm-simple.sm-vertical li {
+    display: block !important;
+  }
+
+  .sm-simple.sm-rtl li {
+    float: right;
+  }
+
+  .sm-simple ul li, .sm-simple.sm-rtl ul li, .sm-simple.sm-vertical li {
+    float: none;
+  }
+
+  .sm-simple a {
+    white-space: nowrap;
+  }
+
+  .sm-simple ul a, .sm-simple.sm-vertical a {
+    white-space: normal;
+  }
+
+  .sm-simple .sm-nowrap > li > a, .sm-simple .sm-nowrap > li > :not(ul) a {
+    white-space: nowrap;
+  }
+
+  /* ...end */
+  .sm-simple a, .sm-simple a:hover, .sm-simple a:focus, .sm-simple a:active, .sm-simple a.highlighted {
+    padding: 11px 20px;
+    color: #555555;
+  }
+
+  .sm-simple a.disabled {
+    background: #fff;
+    color: #cccccc;
+  }
+  .sm-simple a.has-submenu {
+    padding-right: 32px;
+  }
+  .sm-simple a .sub-arrow {
+    right: 0px;
+    width: 12px;
+    height: 20px;
+    background: transparent;
+  }
+  .sm-simple ul a.has-submenu {
+    padding-right: 20px;
+  }
+  .sm-simple ul a .sub-arrow {
+    left: 8px;
+    right: auto;
+  }
+
+  .sm-simple ul > li:first-child {
+    border-top: 0;
+  }
+  .sm-simple .scroll-up,
+  .sm-simple .scroll-down {
+    position: absolute;
+    display: none;
+    visibility: hidden;
+    overflow: hidden;
+    background: #fff;
+    height: 20px;
+  }
+  .sm-simple .scroll-up-arrow,
+  .sm-simple .scroll-down-arrow {
+    position: absolute;
+    top: -2px;
+    left: 50%;
+    margin-left: -8px;
+    width: 0;
+    height: 0;
+    overflow: hidden;
+    border-width: 8px;
+    border-style: dashed dashed solid dashed;
+    border-color: transparent transparent #555555 transparent;
+  }
+  .sm-simple .scroll-down-arrow {
+    top: 6px;
+    border-style: solid dashed dashed dashed;
+    border-color: #555555 transparent transparent transparent;
+  }
+  .sm-simple.sm-rtl a.has-submenu {
+    padding-right: 20px;
+    padding-left: 32px;
+  }
+  .sm-simple.sm-rtl a .sub-arrow {
+    left: 20px;
+    right: auto;
+  }
+  .sm-simple.sm-rtl.sm-vertical a.has-submenu {
+    padding: 11px 20px;
+  }
+  .sm-simple.sm-rtl.sm-vertical a .sub-arrow {
+    left: auto;
+    right: 8px;
+  }
+  .sm-simple.sm-rtl > li:first-child {
+    border-left: 1px solid #eeeeee;
+  }
+  .sm-simple.sm-rtl > li:last-child {
+    border-left: 0;
+  }
+  .sm-simple.sm-rtl ul a.has-submenu {
+    padding: 11px 20px;
+  }
+  .sm-simple.sm-rtl ul a .sub-arrow {
+    left: auto;
+    right: 8px;
+  }
+  .sm-simple.sm-vertical a .sub-arrow {
+    left: 8px;
+    right: auto;
+  }
+  .sm-simple.sm-vertical li {
+    border-left: 0;
+  }
+  .sm-simple.sm-vertical > li:first-child {
+    border-top: 0;
+  }
+  .sm-vertical ul {
+    position: relative !important;
+    margin-left: 0px !important;
+  }
+}
+
+.pointer-underline li a {
+  border-bottom: 1px solid #FFFFFF
+}
+
+.pointer-overline li a {
+  border-top: 1px solid #FFFFFF
+}
+
+.pointer-doubleline li a {
+  border-top: 2px solid #FFFFFF
+}
+
+.pointer-framed li a {
+  border: 1px solid #FFFFFF
+}
+
+
+.main-menu-btn {
+  position: relative;
+  display: inline-block;
+  width: 30px;
+  height: 28px;
+  text-indent: 28px;
+  white-space: nowrap;
+  overflow: hidden;
+  cursor: pointer;
+  -webkit-tap-highlight-color: rgba(0,0,0,0);
+  z-index: 99;
+}
+/* hamburger icon */
+.main-menu-btn-icon, .main-menu-btn-icon:before, .main-menu-btn-icon:after {
+  position: absolute;
+  top: 50%;
+  left: 2px;
+  height: 2px;
+  width: 24px;
+  background: #bbb;
+  -webkit-transition: all 0.25s;
+  transition: all 0.25s;
+}
+.main-menu-btn-icon:before {
+  content: '';
+  top: -7px;
+  left: 0;
+}
+.main-menu-btn-icon:after {
+  content: '';
+  top: 7px;
+  left: 0;
+}
+/* x icon */
+#main-menu-state:checked ~ .main-menu-btn .main-menu-btn-icon {
+  height: 0;
+  background: transparent;
+}
+#main-menu-state:checked ~ .main-menu-btn .main-menu-btn-icon:before {
+  top: 0;
+  -webkit-transform: rotate(-45deg);
+  transform: rotate(-45deg);
+}
+#main-menu-state:checked ~ .main-menu-btn .main-menu-btn-icon:after {
+  top: 0;
+  -webkit-transform: rotate(45deg);
+  transform: rotate(45deg);
+}
+/* hide menu state checkbox (keep it visible to screen readers) */
+#main-menu-state {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  border: 0;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(1px,1px,1px,1px);
+}
+/* hide the menu in mobile view */
+#main-menu-state:not(:checked) ~ #main-menu {
+  display: none;
+}
+#main-menu-state:checked ~ #main-menu {
+  display: inline-block;
+}
+@media (min-width: 1025px) {
+  /* hide the button in desktop view */
+
+  .main-menu-btn {
+    position: absolute;
+    top: -99999px;
+  }
+  /* always show the menu in desktop view */
+  #main-menu-state:not(:checked) ~ #main-menu {
+    display: inline-block;
+  }
+}
+/*# sourceMappingURL=sm-simple.css.map */
+
+
+/* make mega menus take the full width of .main-nav */
+
+#main-menu > .has-mega-menu .scroll-up,
+#main-menu > .has-mega-menu .scroll-down {
+  margin-left: 0 !important;
+}
+
+
+/* clear any floats inside the mega menus */
+
+#main-menu .mega-menu > li {
+  overflow: auto;
+}
+
+
+/* reset mega menu list/link styles (which are inherited from the SmartMenus core/theme styles) */
+
+#main-menu .mega-menu ul {
+  position: static;
+  display: block;
+  margin: 0.83em 0;
+  border: 0;
+  padding: 0 0 0 20px;
+  width: auto;
+  background: transparent;
+  -moz-box-shadow: none;
+  -webkit-box-shadow: none;
+  box-shadow: none;
+}
+
+#main-menu .mega-menu li {
+  display: inline;
+  float: left;
+  width: 50%;
+}
+
+
+/* simple columns inside the mega menus */
+
+#main-menu .mega-menu .column-1-3 {
+  padding: 0 20px;
+}
+
+@media (max-width: 1024px) {
+  #main-menu {
+    display: inline-block;
+    position: absolute;
+    z-index: 9;
+    width: auto;
+    right: 0px;
+    padding: 0 16px;
+  }
+
+#main-menu .mega-menu li {
+    display: block;
+    float: none;
+    width: 100% !important;
+}
+
+
+#main-menu .mega-menu li {
+    display: block;
+    float: none;
+    width: 100% !important;
+}
+.sm ul {
+    display: block !important;
+    position: relative !important;
+    box-shadow: unset !important;
+    border: none;
+    border-radius: 0px !important;
+    margin-left:0px !important;
+}
+  .sm-simple a .sub-arrow {
+    display: none;
+  }
+}
+
+.vertical_menu li {
+  position: relative !important;
+}

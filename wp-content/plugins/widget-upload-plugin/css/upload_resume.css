@@ -1,0 +1,43 @@
+#eightfold-resume-embed #upload-resume-component h2.upload-resume-title {
+    font-size: 28px !important;
+	top: 0px;
+	margin-top:5px;
+  position: relative !important;
+  text-align: center;
+}
+
+#eightfold-resume-embed #upload-resume-component .dropzone {
+  position: relative !important;
+  padding: 0px;
+  font-size: 2.6em;
+}
+#page-wrapper {
+	padding:0px;
+}
+
+.dropzone {
+  border: none;
+  background: #FAFAFA;
+}
+
+.dropzone-content {
+  margin-top: 36px;
+}
+
+#eightfold-resume-embed #upload-resume-component h3.drop-resume-text {
+  font-size: 20px !important;
+  margin-top: 20px !important;
+}
+
+#eightfold-resume-embed #upload-resume-component a.browse-button {
+  margin-top: 24px;
+  font-size: 16px;
+  background-color: #3BBADA !important;
+  padding: 10px 20px;
+  border-radius: 4px;
+	color: #ffffff !important;
+	text-transform: uppercase;
+}
+.col-md-5 {
+  width: 100% !important;
+}

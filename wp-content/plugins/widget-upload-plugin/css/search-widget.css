@@ -1,0 +1,35 @@
+#EFSmartApplyContainer .careerEmbedMode .panel {
+  padding: 5px 0px;
+}
+
+.go-button {
+  background-color: #3BBADA;
+  color: #FFFFFF;
+  text-transform: uppercase;
+  border: 1px solid #3BBADA;
+  font-size: 16px;
+  border-radius: 4px !important;
+}
+
+.Select-control {
+	border-radius: 4px !important;
+}
+
+.search-dropdown {
+	width: 350px !important;
+	margin-right: 12px !important;
+}
+
+.position-facets {
+	margin-top: 30px;
+}
+
+.search-box {
+    margin-right: -19px !important;
+}
+
+@media (max-width: 1440px) {
+	.location-search {
+	    max-width: 350px !important;
+	}
+}

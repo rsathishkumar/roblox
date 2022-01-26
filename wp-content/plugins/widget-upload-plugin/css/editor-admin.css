@@ -1,0 +1,11 @@
+.elementor-repeater-row-item-title {
+  position: relative;
+}
+.elementor-repeater-row-item-title:after {
+  content: "\e92a";
+  font-family: "eicons";
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  font-size: 20px;
+}

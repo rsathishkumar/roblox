@@ -1,0 +1,77 @@
+/*
+ Theme Name:   Eightfold
+ Theme URI:
+ Description:  Eightfold Theme
+ Author:       Eightfold
+ Author URI:
+ Template:     hello-elementor
+ Version:      1.0.0
+ License:      GNU General Public License v2 or later
+ License URI:  http://www.gnu.org/licenses/gpl-2.0.html
+ Tags:         light, dark, two-columns, right-sidebar, responsive-layout, accessibility-ready
+ Text Domain:  eightfold
+*/
+.elementor-social-icon-twitter, .elementor-social-icon-linkedin,.elementor-social-icon-linkedin-in,.elementor-social-icon-youtube, .elementor-social-icon-facebook, .elementor-social-icon-facebook-f {
+  background: none;
+}
+label {
+  display: block;
+}
+.field input {
+  width: 100%;
+}
+.text-opacity {
+	opacity:0.7;
+}
+.info {
+	opacity:0.7;
+	margin-top: -12px;
+}
+.heading {
+	font-size: 16px;
+	font-weight:600;
+}
+.normal {
+	font-size:14px;
+	line-height: 21px;
+}
+
+.info:before {
+	font-family: "Font Awesome 5 Free";
+    font-weight: 900;
+	content: "\f05a";
+	font-size: 16px;
+	margin-right: 5px;
+  vertical-align: bottom;
+}
+
+.e-form__indicators__indicator__separator {
+	background:none;
+}
+
+.e-form__indicators__indicator__separator:after {
+  content: '';
+  background: url(../../uploads/2021/03/arrow.png);
+  position: absolute;
+  left: 48%;
+  width: 12px;
+  height: 20px;
+  background-size: 10px;
+  background-repeat: no-repeat;
+}
+
+.inlinelabel .e-form__indicators__indicator {
+	flex-direction: row;
+}
+
+.inlinelabel .e-form__indicators__indicator__label {
+	padding-left: 5px;
+	width: 90px;
+	margin-top: -10px;
+}
+input[type=date],input[type=email],input[type=number],input[type=password],input[type=search],input[type=tel],input[type=text],input[type=url],select,textarea {
+  padding: 8px 12px;
+}
+hr {
+  border: none;
+}
